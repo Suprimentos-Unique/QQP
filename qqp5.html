@@ -1,0 +1,2010 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QQP · UQ-HUB</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📐</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Barlow+Semi+Condensed:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDF1F0; --paper:#FFFFFF; --ink:#1B2730; --muted:#5D6A72; --faint:#8A969C;
+  --rule:#D6DDDB; --rule-strong:#B6C1BE;
+  --primary:#0E5C63; --primary-hover:#0A4A50; --primary-soft:#DCEBEC;
+  --lvl1:#1B2730; --lvl2:#E2E9E7; --lvl0:#0E5C63;
+  --best:#D3EEDC; --best-ink:#145C35;
+  --warn:#8A5300; --warn-bg:#FBEFD7;
+  --danger:#A3302A; --danger-soft:#F7E2E0;
+  --font:"Barlow", "Segoe UI", Arial, sans-serif;
+  --font-cond:"Barlow Semi Condensed", "Arial Narrow", Arial, sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.hidden{display:none!important}
+
+/* ---------- botões ---------- */
+.btn{display:inline-flex;align-items:center;gap:.4em;border:1px solid var(--rule-strong);background:var(--paper);padding:.42em .9em;border-radius:6px;cursor:pointer;font-weight:500;white-space:nowrap}
+.btn:hover{border-color:var(--ink)}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn.primary:hover{background:var(--primary-hover)}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.ghost:hover{background:rgba(27,39,48,.06)}
+.btn.danger{color:var(--danger)}
+.btn.danger:hover{border-color:var(--danger);background:var(--danger-soft)}
+.btn.sm{padding:.2em .55em;font-size:13px}
+.btn:disabled{opacity:.5;cursor:default}
+.icon{border:0;background:transparent;cursor:pointer;color:var(--muted);width:26px;height:26px;border-radius:5px;font-size:14px;line-height:1}
+.icon:hover{background:rgba(27,39,48,.08);color:var(--ink)}
+.icon.del:hover{background:var(--danger-soft);color:var(--danger)}
+
+/* ---------- login ---------- */
+.login{min-height:100%;display:grid;place-items:center;padding:24px}
+.login form{background:var(--paper);border:1px solid var(--rule);border-radius:10px;padding:36px 34px;width:min(380px,100%)}
+.login h1{font-size:44px;line-height:1;margin:0;font-weight:700;letter-spacing:-.02em}
+.login p.sub{margin:.5em 0 1.6em;color:var(--muted)}
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:14px}
+.field label{font-size:13px;color:var(--muted);font-weight:500}
+.field input,.field select,.field textarea{border:1px solid var(--rule-strong);border-radius:6px;padding:.55em .7em;background:#fff}
+.field textarea{min-height:140px;font-family:var(--font-cond);resize:vertical}
+.msg-erro{color:var(--danger);font-size:14px;min-height:1.4em;margin:0 0 10px}
+
+/* ---------- barra superior ---------- */
+.top{position:sticky;top:0;z-index:30;background:var(--ink);color:#fff;display:flex;align-items:center;gap:18px;padding:0 20px;height:54px}
+.brand{font-weight:700;font-size:22px;letter-spacing:-.01em;cursor:pointer;background:none;border:0;color:#fff;padding:0}
+.brand small{font-weight:400;font-size:13px;color:#AEBBC0;margin-left:8px;letter-spacing:0}
+.crumbs{display:flex;align-items:baseline;gap:8px;min-width:0;font-size:15px}
+.crumbs .sep{color:#6F8088}
+.crumbs b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top .spacer{flex:1}
+.top .status{font-size:13px;color:#AEBBC0;white-space:nowrap}
+.top .status.dirty{color:#F5C46B}
+.top .btn{background:transparent;border-color:#4A5B64;color:#fff}
+.top .btn:hover{border-color:#fff}
+.top .btn.primary{background:#fff;color:var(--ink);border-color:#fff}
+.top .btn.primary:hover{background:#DCE7E5}
+.top .user{font-size:13px;color:#AEBBC0}
+
+/* ---------- abas ---------- */
+.tabs{display:flex;gap:2px;padding:0 20px;background:var(--paper);border-bottom:1px solid var(--rule);position:sticky;top:54px;z-index:25}
+.tabs button{border:0;background:none;padding:12px 14px 10px;cursor:pointer;color:var(--muted);font-weight:500;border-bottom:3px solid transparent}
+.tabs button:hover{color:var(--ink)}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--primary)}
+
+main{padding:20px}
+.wrap{max-width:1180px;margin:0 auto}
+h2{font-size:22px;margin:0 0 4px;font-weight:600;letter-spacing:-.01em}
+h3{font-size:17px;margin:0;font-weight:600}
+p.lead{color:var(--muted);margin:0 0 18px;max-width:70ch}
+.bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.bar .spacer{flex:1}
+
+/* ---------- lista de QQPs ---------- */
+.lista{width:100%;border-collapse:collapse;background:var(--paper);border:1px solid var(--rule);border-radius:8px;overflow:hidden}
+.lista th{text-align:left;font-size:13px;font-weight:600;color:var(--muted);padding:10px 12px;border-bottom:1px solid var(--rule);background:#F7F9F8}
+.lista td{padding:11px 12px;border-bottom:1px solid var(--rule);vertical-align:middle}
+.lista tr:last-child td{border-bottom:0}
+.lista tr.click{cursor:pointer}
+.lista tr.click:hover td{background:#F4F8F7}
+.lista .obra{font-weight:600}
+.lista .n{text-align:right;font-variant-numeric:tabular-nums}
+.lista .acoes{text-align:right;white-space:nowrap}
+.vazio{background:var(--paper);border:1px dashed var(--rule-strong);border-radius:8px;padding:40px;text-align:center}
+.vazio p{color:var(--muted);margin:.4em auto 1.2em;max-width:52ch}
+.busca{border:1px solid var(--rule-strong);border-radius:6px;padding:.42em .7em;min-width:240px;background:#fff}
+
+/* ---------- ranking ---------- */
+.ranking{background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:16px 18px 10px;margin-bottom:16px}
+.ranking .head{display:flex;align-items:baseline;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.ranking .head .orc{color:var(--muted);font-size:14px}
+.rk{display:grid;grid-template-columns:minmax(120px,190px) 1fr 140px 150px;gap:14px;align-items:center;padding:7px 0;border-top:1px solid var(--rule)}
+.ranking .head + .rk{border-top:0}
+.rk .nome{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rk .nome small{display:block;font-weight:400;color:var(--warn);font-size:12px}
+.rk .trilho{position:relative;height:18px;background:#EEF2F1;border-radius:3px}
+.rk .barra{position:absolute;left:0;top:0;bottom:0;background:#9DB3B0;border-radius:3px}
+.rk.melhor .barra{background:var(--primary)}
+.rk .marco{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink)}
+.rk .v{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.rk .s{text-align:right;font-variant-numeric:tabular-nums;font-size:14px}
+.pos{color:var(--best-ink)} .neg{color:var(--danger)}
+.legenda{font-size:12px;color:var(--muted);margin-top:6px;display:flex;gap:16px;flex-wrap:wrap}
+.legenda i{display:inline-block;width:10px;height:10px;vertical-align:-1px;margin-right:5px;border-radius:2px}
+
+/* ---------- tabela QQP ---------- */
+.scroller{overflow:auto;max-height:calc(100vh - 150px);background:var(--paper);border:1px solid var(--rule);border-radius:8px}
+table.qqp{border-collapse:separate;border-spacing:0;font-family:var(--font-cond);font-size:14px;min-width:100%}
+.qqp th,.qqp td{padding:5px 8px;border-bottom:1px solid var(--rule);border-right:1px solid #EBEFEE;white-space:nowrap}
+.qqp thead th{position:sticky;top:0;z-index:5;background:#F3F6F5;font-weight:600;font-size:13px;color:var(--muted);text-align:center;vertical-align:bottom}
+.qqp thead tr:nth-child(2) th{top:31px}
+.qqp thead th.forn{color:var(--ink);font-size:14px;border-bottom:2px solid var(--ink);vertical-align:top}
+.qqp thead th.forn small{display:block;font-weight:400;color:var(--muted);font-size:12px;white-space:normal;max-width:260px;margin:0 auto}
+.qqp .c0{position:sticky;left:0;z-index:4;background:inherit;min-width:300px;max-width:380px;text-align:left;border-right:1px solid var(--rule-strong)}
+.qqp thead th.c0{z-index:6;background:#F3F6F5}
+.qqp td.n{text-align:right;font-variant-numeric:tabular-nums}
+.qqp td.linha{max-width:210px;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
+.qqp td.sem{color:var(--faint);text-align:center}
+.qqp .bl{border-left:2px solid var(--rule-strong)}
+.qqp tr{background:var(--paper)}
+.qqp tr.l0{background:var(--lvl0);color:#fff;font-weight:700}
+.qqp tr.l0 td{border-bottom-color:var(--lvl0);font-size:15px}
+.qqp tr.l1{background:var(--lvl1);color:#fff;font-weight:600}
+.qqp tr.l1 td{border-bottom-color:#33434D;border-right-color:#33434D}
+.qqp tr.l2{background:var(--lvl2);font-weight:600}
+.qqp tr.l3 td.c0{padding-left:42px}
+.qqp tr.l2 td.c0{padding-left:22px}
+.qqp td.best{background:var(--best);color:var(--best-ink);font-weight:700}
+.qqp tr.l1 td.best,.qqp tr.l0 td.best{background:#2E8B57;color:#fff}
+.qqp td.falta{color:#F5C46B}
+.qqp tr.l2 td.falta,.qqp tr.l3 td.falta{color:var(--warn)}
+.caret{border:0;background:none;color:inherit;cursor:pointer;width:18px;padding:0;font-size:11px;opacity:.75}
+.caret:hover{opacity:1}
+.qqp tr.sec td{background:#F3F6F5;font-weight:600;color:var(--muted);font-size:13px;padding-top:16px}
+
+/* edição */
+.qqp input.in,.qqp select.in{border:1px solid transparent;background:transparent;border-radius:4px;padding:3px 5px;font-family:var(--font-cond);font-size:14px;width:100%}
+.qqp input.in:hover,.qqp select.in:hover{border-color:var(--rule-strong);background:#fff}
+.qqp input.in:focus,.qqp select.in:focus{border-color:var(--primary);background:#fff;outline:none;box-shadow:0 0 0 2px var(--primary-soft)}
+.qqp tr.l1 input.in{color:#fff;font-weight:600}
+.qqp tr.l1 input.in:hover,.qqp tr.l1 input.in:focus{color:var(--ink)}
+.qqp input.num{text-align:right;width:74px}
+.qqp input.din{text-align:right;width:130px}
+.qqp select.in{min-width:170px;max-width:240px}
+.qqp select.in.vazio-sel{color:var(--faint)}
+.qqp td.herd{color:var(--faint);text-align:right}
+.qqp td.acoes{white-space:nowrap;text-align:right;position:sticky;right:0;z-index:3;background:inherit;box-shadow:-1px 0 0 var(--rule)}
+.qqp th.acoes{position:sticky;right:0;z-index:6;background:#F3F6F5}
+.qqp tr.l1 .icon{color:#C9D3D6}
+.qqp tr.l1 .icon:hover{background:rgba(255,255,255,.12);color:#fff}
+.grp-flex{display:flex;align-items:center;gap:8px}
+.grp-flex label{font-size:12px;color:#AEBBC0;font-weight:400;white-space:nowrap}
+.addrow td{background:#FAFBFB}
+.addrow .btn{font-family:var(--font)}
+
+/* ---------- fornecedores ---------- */
+.forns{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;margin-bottom:28px}
+.forn-box{background:var(--paper);border:1px solid var(--rule);border-top:3px solid var(--ink);border-radius:6px;padding:14px 14px 10px}
+.forn-box .cab{display:flex;gap:6px;align-items:center;margin-bottom:8px}
+.forn-box .cab input{flex:1;font-size:17px;font-weight:600;border:1px solid transparent;border-radius:4px;padding:3px 6px}
+.forn-box .cab input:hover,.forn-box .cab input:focus{border-color:var(--rule-strong)}
+.forn-box .cond{width:100%;border:1px solid var(--rule);border-radius:4px;padding:5px 7px;font-size:14px;margin-bottom:10px}
+.linhas{width:100%;border-collapse:collapse;font-family:var(--font-cond);font-size:14px}
+.linhas th{text-align:left;font-weight:600;color:var(--muted);font-size:12px;padding:4px 4px;border-bottom:1px solid var(--rule)}
+.linhas td{border-bottom:1px solid #EEF1F0;padding:1px 0}
+.linhas input{width:100%;border:1px solid transparent;border-radius:4px;padding:4px 5px;font-family:var(--font-cond);font-size:14px;background:transparent}
+.linhas input:hover,.linhas input:focus{border-color:var(--rule-strong);background:#fff}
+.linhas input.din{text-align:right}
+.linhas .usa{font-size:11px;color:var(--faint);text-align:center;width:46px}
+.forn-box .rodape{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+
+/* ---------- dados ---------- */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:4px 18px;background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:18px;margin-bottom:18px}
+.form-grid .full{grid-column:1/-1}
+.fator{font-family:var(--font-cond);font-size:26px;font-weight:600;font-variant-numeric:tabular-nums;padding-top:4px}
+
+/* ---------- modal / avisos ---------- */
+.modal-bg{position:fixed;inset:0;background:rgba(27,39,48,.45);display:grid;place-items:center;z-index:100;padding:20px}
+.modal{background:var(--paper);border-radius:10px;padding:22px 24px;width:min(520px,100%);max-height:90vh;overflow:auto}
+.modal h3{margin-bottom:6px}
+.modal p{color:var(--muted);margin:0 0 14px}
+.modal .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:8px;flex-wrap:wrap}
+.radio{display:flex;gap:8px;align-items:flex-start;padding:6px 0;cursor:pointer}
+.radio input{margin-top:4px}
+.radio small{display:block;color:var(--muted)}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:8px;z-index:200;font-size:14px;box-shadow:0 6px 24px rgba(0,0,0,.18)}
+.banner{background:var(--warn-bg);color:var(--warn);border:1px solid #EBCB8F;border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.carregando{padding:60px;text-align:center;color:var(--muted)}
+
+@media (max-width:760px){
+  .top .user,.brand small{display:none}
+  .rk{grid-template-columns:1fr 110px;row-gap:4px}
+  .rk .trilho{grid-column:1/-1;order:3}
+  .rk .s{grid-column:2}
+  main{padding:12px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* ================= v2 ================= */
+.top nav.menu{display:flex;gap:4px;margin-left:8px}
+.top nav.menu button{background:none;border:0;color:#AEBBC0;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:500}
+.top nav.menu button:hover{color:#fff;background:rgba(255,255,255,.08)}
+.top nav.menu button[aria-current="true"]{color:#fff;background:rgba(255,255,255,.14)}
+.crumbs button{background:none;border:0;color:#fff;font-weight:600;cursor:pointer;padding:0;font-size:15px}
+.crumbs button:hover{text-decoration:underline}
+
+/* obras */
+.obras{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.obra-card{background:var(--paper);border:1px solid var(--rule);border-left:5px solid var(--primary);border-radius:6px;padding:16px 18px;cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:6px;font:inherit;color:inherit}
+.obra-card:hover{border-color:var(--rule-strong);border-left-color:var(--primary-hover);background:#FBFCFC}
+.obra-card .nome{font-size:24px;font-weight:700;letter-spacing:-.01em;line-height:1.1}
+.obra-card .meta{color:var(--muted);font-size:14px}
+.carteira{margin-bottom:18px}
+.carteira h3{margin:0 0 6px;font-size:16px}
+.sub-tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.sub-tabs button{border:1px solid var(--rule-strong);background:var(--paper);border-radius:999px;padding:5px 14px;cursor:pointer;font-weight:500;color:var(--muted)}
+.sub-tabs button[aria-selected="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+/* centralizar quantidades */
+.qqp td.cq,.qqp th.cq{text-align:center}
+.qqp input.in.num{text-align:center;width:78px;margin:0 auto;display:block}
+.qqp td.herd{text-align:center}
+.qqp td.un{color:var(--muted);text-align:center;font-size:13px}
+.qqp td.desc-col{color:var(--muted);max-width:180px;overflow:hidden;text-overflow:ellipsis}
+.qqp input.in.desc{min-width:110px}
+.qqp input.in::placeholder{color:#A9B4B8}
+
+/* comparativo com escolha de linha */
+.qqp select.esc{min-width:150px;max-width:230px;font-size:13px;padding:2px 4px;border:1px solid transparent;background:transparent;border-radius:4px;font-family:var(--font-cond);color:var(--ink)}
+.qqp select.esc:hover,.qqp select.esc:focus{border-color:var(--rule-strong);background:#fff}
+.qqp select.esc.auto{color:var(--muted)}
+.qqp tr.l1 select.esc{color:#fff}
+.qqp tr.l1 select.esc:focus,.qqp tr.l1 select.esc:hover{color:var(--ink)}
+.qqp .emb{display:block;font-size:11px;color:var(--faint);font-weight:400;line-height:1.1}
+.qqp .aviso{color:var(--warn);cursor:help;margin-left:3px}
+.qqp tr.l0b{background:#E7F0EF;font-weight:600}
+.qqp tr.l0b td{border-bottom-color:#C9D9D7}
+.qqp tr.l0b td.c0{background:#E7F0EF}
+.qqp thead th.forn .ficha{display:block;font-weight:400;color:var(--muted);font-size:12px;white-space:normal;max-width:300px;margin:2px auto 0;line-height:1.3}
+.qqp td.vg{color:var(--muted);text-align:center;font-size:13px}
+
+/* filtro de fornecedores */
+details.filtro{position:relative}
+details.filtro summary{list-style:none;cursor:pointer;border:1px solid var(--rule-strong);background:var(--paper);border-radius:6px;padding:.42em .9em;font-weight:500;user-select:none}
+details.filtro summary::-webkit-details-marker{display:none}
+details.filtro summary::after{content:" ▾";color:var(--muted)}
+details.filtro[open] summary{border-color:var(--ink)}
+details.filtro .painel{position:absolute;right:0;top:calc(100% + 6px);background:var(--paper);border:1px solid var(--rule-strong);border-radius:8px;box-shadow:0 10px 30px rgba(27,39,48,.15);padding:8px;z-index:40;min-width:240px}
+details.filtro label{display:flex;gap:8px;align-items:center;padding:5px 6px;border-radius:4px;cursor:pointer}
+details.filtro label:hover{background:#F2F5F4}
+details.filtro .acts{display:flex;gap:6px;border-top:1px solid var(--rule);margin-top:6px;padding-top:8px}
+
+/* ficha do fornecedor */
+.forn-box .grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;margin-bottom:10px}
+.forn-box .grid2 .full{grid-column:1/-1}
+.mini{display:flex;flex-direction:column;gap:2px}
+.mini label{font-size:12px;color:var(--muted)}
+.mini input,.mini select{border:1px solid var(--rule);border-radius:4px;padding:4px 7px;font-size:14px;background:#fff;width:100%}
+.mini input:focus,.mini select:focus{border-color:var(--primary);outline:none}
+.forn-box h4{margin:12px 0 6px;font-size:13px;color:var(--muted);font-weight:600}
+.ajuste-total{font-size:13px;color:var(--muted);margin-top:6px}
+
+/* preços por insumo */
+.insumo-bloco{background:var(--paper);border:1px solid var(--rule);border-radius:8px;margin-bottom:12px;overflow:hidden}
+.insumo-bloco .cab{display:flex;gap:12px;align-items:center;padding:10px 14px;background:#F3F6F5;border-bottom:1px solid var(--rule);flex-wrap:wrap}
+.insumo-bloco .cab input.nome{font-weight:600;font-size:16px;border:1px solid transparent;border-radius:4px;padding:3px 6px;background:transparent;min-width:260px;flex:1}
+.insumo-bloco .cab input.nome:hover,.insumo-bloco .cab input.nome:focus{border-color:var(--rule-strong);background:#fff}
+.insumo-bloco .cab .info{color:var(--muted);font-size:14px;white-space:nowrap}
+.insumo-bloco .cab input.un{width:64px;text-align:center;border:1px solid var(--rule);border-radius:4px;padding:3px}
+table.ofertas{width:100%;border-collapse:collapse;font-family:var(--font-cond);font-size:14px}
+table.ofertas th{text-align:left;font-weight:600;color:var(--muted);font-size:12px;padding:6px 8px;border-bottom:1px solid var(--rule)}
+table.ofertas td{padding:2px 6px;border-bottom:1px solid #EEF1F0}
+table.ofertas tr.sep td{border-top:1px solid var(--rule-strong)}
+table.ofertas input,table.ofertas select{width:100%;border:1px solid transparent;border-radius:4px;padding:4px 5px;font-family:var(--font-cond);font-size:14px;background:transparent}
+table.ofertas input:hover,table.ofertas input:focus,table.ofertas select:hover,table.ofertas select:focus{border-color:var(--rule-strong);background:#fff;outline:none}
+table.ofertas .r{text-align:right}
+table.ofertas td.calc{text-align:right;font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+table.ofertas td.calc small{display:block;font-weight:400;color:var(--faint);font-size:11px}
+table.ofertas td.forn-nome{font-weight:600;white-space:nowrap}
+.insumo-bloco .rodape{padding:8px 12px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.insumo-bloco .rodape select{border:1px solid var(--rule-strong);border-radius:6px;padding:3px 6px;font-size:13px}
+
+/* modelos */
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.chip{border:1px solid var(--primary);color:var(--primary);background:var(--primary-soft);border-radius:999px;padding:3px 11px;cursor:pointer;font-size:13px;font-weight:500}
+.chip:hover{background:var(--primary);color:#fff}
+.chip.op{border-color:var(--rule-strong);color:var(--ink);background:#fff;min-width:34px;font-weight:700}
+.chip.op:hover{background:var(--ink);color:#fff}
+.formula-in{width:100%;font-family:var(--font-cond);font-size:17px;border:1px solid var(--rule-strong);border-radius:6px;padding:8px 10px}
+.formula-ok{color:var(--best-ink);font-size:14px;margin-top:6px}
+.formula-erro{color:var(--danger);font-size:14px;margin-top:6px}
+.legivel{font-family:var(--font-cond);font-size:16px;margin-top:4px}
+.previa{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-top:10px}
+.previa .mini input{width:90px;text-align:center}
+.previa .res{font-family:var(--font-cond);font-size:22px;font-weight:700;padding-bottom:2px}
+.secao{background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:16px 18px;margin-bottom:16px}
+.secao h3{margin-bottom:4px}
+.secao p.lead{margin-bottom:10px}
+table.campos{width:100%;border-collapse:collapse;font-size:14px}
+table.campos th{text-align:left;color:var(--muted);font-size:12px;font-weight:600;padding:4px 6px;border-bottom:1px solid var(--rule)}
+table.campos td{padding:3px 4px;border-bottom:1px solid #EEF1F0}
+table.campos input,table.campos select{width:100%;border:1px solid var(--rule);border-radius:4px;padding:4px 6px;font-size:14px;background:#fff}
+table.campos code{font-family:var(--font-cond);color:var(--muted);font-size:13px}
+.modelo-lista td .legivel{font-size:14px;margin:0;color:var(--muted)}
+.tag{display:inline-block;font-size:12px;border-radius:4px;padding:1px 7px;background:#EEF2F1;color:var(--muted);margin-left:6px;font-weight:500}
+.checkline{display:flex;gap:8px;align-items:center;padding:6px 0;cursor:pointer}
+
+/* incc */
+table.incc{border-collapse:collapse;background:var(--paper);border:1px solid var(--rule);border-radius:8px;overflow:hidden;font-variant-numeric:tabular-nums}
+table.incc th{text-align:left;font-size:13px;color:var(--muted);padding:8px 12px;background:#F7F9F8;border-bottom:1px solid var(--rule)}
+table.incc td{padding:3px 8px;border-bottom:1px solid var(--rule)}
+table.incc input{border:1px solid transparent;border-radius:4px;padding:4px 6px;width:130px;background:transparent}
+table.incc input:hover,table.incc input:focus{border-color:var(--rule-strong);background:#fff}
+table.incc td.var{color:var(--muted);font-size:13px;text-align:right;padding-right:14px}
+
+/* ================= tema UQ-HUB ================= */
+:root{
+  --bg:#F4F1EC; --paper:#FFFFFF; --sand:#FAF7F2; --sand-2:#F2EDE6;
+  --ink:#1C1A18; --muted:#7D756B; --faint:#A39B91;
+  --rule:#E6E1DA; --rule-strong:#D2CFCB;
+  --primary:#7A1930; --primary-hover:#5E1325; --primary-soft:#EEE1E4; --primary-pill:#E4D5D3;
+  --wine-dark:#3D0F1A;
+  --lvl0:#7A1930; --lvl1:#3D0F1A; --lvl2:#F2EDE6;
+  --best:#E3EFE1; --best-ink:#137A3A; --green:#16A34A;
+  --warn:#9A5B00; --warn-bg:#FBF1DE;
+  --danger:#B42318; --danger-soft:#FBE7E4;
+  --font:"Archivo", "Segoe UI", Arial, sans-serif;
+  --font-cond:"Barlow Semi Condensed", "Arial Narrow", Arial, sans-serif;
+  --font-wide:"Archivo", "Segoe UI", Arial, sans-serif;
+  --font-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+}
+body{color:var(--ink)}
+.eyebrow,.field label,.mini label,.lista th,table.campos th,table.ofertas th,table.linhas th,table.incc th{
+  text-transform:uppercase;letter-spacing:.08em;font-size:11px;font-weight:600;color:var(--muted)}
+h2{font-family:var(--font-wide);font-stretch:118%;font-weight:700;text-transform:uppercase;letter-spacing:.02em;font-size:20px;color:var(--primary)}
+h3{font-weight:600}
+
+/* botões em pílula, como no hub */
+.btn{border-radius:999px;border-color:var(--rule-strong);background:var(--paper);color:var(--ink);padding:.42em 1em}
+.btn:hover{border-color:var(--primary);color:var(--primary)}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn.primary:hover{background:var(--primary-hover);border-color:var(--primary-hover);color:#fff}
+.btn.danger{color:var(--danger)}
+.btn.danger:hover{border-color:var(--danger);background:var(--danger-soft);color:var(--danger)}
+.icon:hover{background:var(--primary-soft);color:var(--primary)}
+
+/* campos com fundo areia */
+.field input,.field select,.field textarea,.busca,.mini input,.mini select{background:var(--sand);border-color:var(--rule-strong);border-radius:8px}
+.field input:focus,.field select:focus,.field textarea:focus,.mini input:focus,.mini select:focus{border-color:var(--primary);outline:none;box-shadow:0 0 0 3px var(--primary-soft);background:#fff}
+:focus-visible{outline-color:var(--primary)}
+
+/* barra superior clara com a marca em vinho */
+.top{background:var(--paper);color:var(--ink);border-bottom:1px solid var(--rule);height:60px}
+.brand{color:var(--primary);font-family:var(--font-wide);font-stretch:125%;font-weight:800;letter-spacing:.12em;font-size:20px}
+.brand small{color:var(--muted)}
+.top nav.menu button{color:var(--muted);border-radius:8px;position:relative}
+.top nav.menu button:hover{color:var(--primary);background:var(--sand)}
+.top nav.menu button[aria-current="true"]{color:var(--ink);background:#EEEEEE}
+.top nav.menu button[aria-current="true"]::before{content:"";position:absolute;left:0;top:6px;bottom:6px;width:3px;border-radius:2px;background:var(--wine-dark)}
+.crumbs{font-family:var(--font-wide);font-stretch:118%;text-transform:uppercase;letter-spacing:.04em;font-size:14px}
+.crumbs .sep{color:var(--faint)}
+.crumbs b{color:var(--primary);font-weight:700}
+.crumbs button{color:var(--ink);font-family:inherit;font-stretch:inherit;font-size:inherit;letter-spacing:inherit;text-transform:inherit}
+.top .status{font-family:var(--font-mono);font-size:12px;color:var(--muted)}
+.top .status.dirty{color:var(--warn)}
+.top .user{color:var(--muted);font-family:var(--font-mono);font-size:12px}
+.top .btn{background:var(--paper);border-color:var(--rule-strong);color:var(--ink)}
+.top .btn:hover{border-color:var(--primary);color:var(--primary)}
+.top .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.top .btn.primary:hover{background:var(--primary-hover);color:#fff}
+
+/* abas com sublinhado vinho */
+.tabs{top:60px;background:var(--bg);border-bottom:1px solid var(--rule-strong)}
+.tabs button{color:var(--muted)}
+.tabs button:hover{color:var(--primary)}
+.tabs button[aria-selected="true"]{color:var(--primary);border-bottom-color:var(--primary)}
+.sub-tabs button{background:var(--paper);border-color:var(--rule-strong);color:var(--ink)}
+.sub-tabs button:hover{border-color:var(--primary);color:var(--primary)}
+.sub-tabs button[aria-selected="true"]{background:var(--primary-pill);color:var(--wine-dark);border-color:#CDB5B3}
+
+/* listas e cartões */
+.lista{border-color:var(--rule);border-radius:12px}
+.lista th{background:var(--sand)}
+.lista tr.click:hover td{background:var(--sand)}
+.lista .obra{color:var(--ink)}
+.obra-card{border-left-color:var(--primary);border-radius:12px}
+.obra-card:hover{background:var(--sand);border-left-color:var(--wine-dark)}
+.obra-card .nome{font-family:var(--font-wide);font-stretch:118%;text-transform:uppercase;letter-spacing:.03em;font-size:21px;color:var(--primary)}
+.vazio{border-color:var(--rule-strong);border-radius:12px}
+.tag{background:var(--primary-soft);color:var(--primary);border:1px solid #DCC3C9;border-radius:6px}
+.pos{color:var(--green)}
+
+/* ranking */
+.ranking{border-radius:12px}
+.rk .trilho{background:var(--sand-2)}
+.rk .barra{background:#C9B2B8}
+.rk.melhor .barra{background:var(--primary)}
+.rk .marco{background:var(--ink)}
+.legenda i{border-radius:3px}
+
+/* tabela QQP */
+.scroller{border-radius:12px}
+.qqp thead th,.qqp thead th.c0,.qqp th.acoes{background:var(--sand)}
+.qqp thead th{text-transform:uppercase;letter-spacing:.05em;font-size:11px}
+.qqp thead th.forn{font-family:var(--font-wide);font-stretch:112%;font-size:13px;letter-spacing:.04em;color:var(--primary);border-bottom-color:var(--primary)}
+.qqp thead th.forn .ficha{text-transform:none;letter-spacing:0;font-family:var(--font);font-stretch:100%}
+.qqp tr.l0{background:var(--lvl0)}
+.qqp tr.l0 td{border-bottom-color:var(--lvl0)}
+.qqp tr.l0b,.qqp tr.l0b td.c0{background:var(--primary-soft)}
+.qqp tr.l0b td{border-bottom-color:#DCC3C9}
+.qqp tr.l1{background:var(--lvl1)}
+.qqp tr.l1 td{border-bottom-color:#5A2531;border-right-color:#5A2531}
+.qqp tr.l2{background:var(--lvl2)}
+.qqp tr.sec td{background:var(--sand)}
+.qqp td.best{background:var(--best);color:var(--best-ink)}
+.qqp tr.l1 td.best,.qqp tr.l0 td.best{background:var(--green);color:#fff}
+.qqp td.falta{color:#F7C98B}
+.qqp input.in:focus,.qqp select.in:focus{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary-soft)}
+.qqp tr.l1 .icon:hover{background:rgba(255,255,255,.14);color:#fff}
+.addrow td{background:var(--sand)}
+
+/* fornecedores, insumos, modelos */
+.forn-box{border-top-color:var(--primary);border-radius:12px}
+.forn-box .cab input{font-family:var(--font-wide);font-stretch:112%;text-transform:uppercase;letter-spacing:.03em;font-size:16px;color:var(--primary)}
+.insumo-bloco{border-radius:12px}
+.insumo-bloco .cab{background:var(--sand)}
+.secao{border-radius:12px}
+.chip{border-color:#DCC3C9;color:var(--primary);background:var(--primary-soft)}
+.chip:hover{background:var(--primary);border-color:var(--primary);color:#fff}
+.chip.op:hover{background:var(--wine-dark);border-color:var(--wine-dark)}
+.formula-in{border-radius:8px;background:var(--sand)}
+.formula-in:focus{outline:none;border-color:var(--primary);background:#fff;box-shadow:0 0 0 3px var(--primary-soft)}
+.formula-ok{color:var(--green)}
+.form-grid{border-radius:12px}
+.fator{color:var(--primary)}
+table.incc{border-radius:12px}
+details.filtro summary{border-radius:999px;border-color:var(--rule-strong)}
+details.filtro[open] summary{border-color:var(--primary);color:var(--primary)}
+details.filtro .painel{border-radius:12px}
+details.filtro label:hover{background:var(--sand)}
+
+/* login */
+.login form{border-radius:14px}
+.login h1{color:var(--primary);font-family:var(--font-wide);font-stretch:125%;letter-spacing:.1em}
+
+/* avisos */
+.toast{background:var(--wine-dark);border-radius:999px;padding:10px 20px}
+.modal{border-radius:14px}
+.modal h3{color:var(--primary)}
+</style>
+</head>
+<body>
+<div id="app"><div class="carregando">Carregando…</div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script type="module">
+/* =========================================================================
+   QQP · Quadro de quantitativos e preços — Suprimentos
+   Versão 2 — obras, construtor de modelos, várias linhas por insumo,
+   conversão de unidade, ajustes por fornecedor, tabela de INCC.
+   ========================================================================= */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+import { getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc, runTransaction, onSnapshot, serverTimestamp, query, where } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBTnPn8XoQnR-wW7WwSbPs5KTF8hILGJ8Q",
+  authDomain: "qqp-suprimentos.firebaseapp.com",
+  projectId: "qqp-suprimentos",
+  storageBucket: "qqp-suprimentos.firebasestorage.app",
+  messagingSenderId: "299327419240",
+  appId: "1:299327419240:web:5281a42d82bf963b04dcdd"
+};
+const fbApp = initializeApp(firebaseConfig);
+const auth = getAuth(fbApp);
+const db = getFirestore(fbApp);
+const C_QQP = "qqps", C_OBRA = "obras", C_MOD = "modelos", C_CFG = "config";
+
+/* ---------------- utilidades ---------------- */
+const app = document.getElementById("app");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid = () => Math.random().toString(36).slice(2, 10);
+const clone = o => JSON.parse(JSON.stringify(o ?? null));
+function num(v){
+  if (v === null || v === undefined || v === "") return 0;
+  if (typeof v === "number") return isFinite(v) ? v : 0;
+  let s = String(v).trim().replace(/\s/g, "").replace(/^R\$/i, "");
+  if (s.includes(",")) s = s.replace(/\./g, "").replace(",", ".");
+  const n = Number(s); return isFinite(n) ? n : 0;
+}
+const parseIn = v => String(v).trim() === "" ? null : num(v);
+const inVal = n => (n === null || n === undefined || n === "") ? "" : String(n).replace(".", ",");
+const brl = n => (n ?? 0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
+const brl0 = n => (n ?? 0).toLocaleString("pt-BR", {style:"currency", currency:"BRL", maximumFractionDigits:0});
+const qtdF = n => (n ?? 0).toLocaleString("pt-BR", {maximumFractionDigits:2});
+const fat = n => n.toLocaleString("pt-BR", {minimumFractionDigits:4, maximumFractionDigits:4});
+const dataBR = s => s ? s.split("-").reverse().join("/") : "";
+const hojeISO = () => new Date().toISOString().slice(0, 10);
+const chave = s => String(s || "").trim().toUpperCase().replace(/\s+/g, " ");
+const MESES = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+const mesBR = m => { if (!m) return ""; const [a, b] = m.split("-"); return `${MESES[+b - 1]}/${a}`; };
+function slug(s){
+  return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").replace(/^(\d)/, "c_$1") || "campo";
+}
+function toast(msg, ms = 2600){
+  document.querySelectorAll(".toast").forEach(x => x.remove());
+  const t = document.createElement("div"); t.className = "toast"; t.textContent = msg; t.setAttribute("role", "status");
+  document.body.appendChild(t); setTimeout(() => t.remove(), ms);
+}
+function moveArr(arr, i, d){ const j = i + d; if (j < 0 || j >= arr.length) return; [arr[i], arr[j]] = [arr[j], arr[i]]; }
+function setPath(obj, path, val){ const k = path.split("."); let o = obj; for (let i = 0; i < k.length - 1; i++){ o[k[i]] ??= {}; o = o[k[i]]; } o[k[k.length - 1]] = val; }
+function getPath(obj, path){ return path.split(".").reduce((o, k) => o == null ? undefined : o[k], obj); }
+const semMeta = d => { const { atualizadoEm, atualizadoPor, versao, resumo, id, ...r } = d || {}; return r; };
+
+/* ---------------- fórmulas (sem eval) ---------------- */
+function tokenizar(s){
+  const t = []; let i = 0;
+  while (i < s.length){
+    const c = s[i];
+    if (/\s/.test(c)){ i++; continue; }
+    if (/[0-9]/.test(c)){ let j = i; while (j < s.length && /[0-9.,]/.test(s[j])) j++; t.push({ t:"n", v: num(s.slice(i, j)) }); i = j; continue; }
+    if (/[A-Za-z_]/.test(c)){ let j = i; while (j < s.length && /[A-Za-z0-9_]/.test(s[j])) j++; t.push({ t:"id", v: s.slice(i, j) }); i = j; continue; }
+    const op = { "+":"+", "-":"-", "−":"-", "*":"*", "×":"*", "/":"/", "÷":"/", "(":"(", ")":")" }[c];
+    if (!op) throw new Error(`O caractere "${c}" não é permitido`);
+    t.push({ t:"op", v: op }); i++;
+  }
+  return t;
+}
+function compilar(s, chaves){
+  const t = tokenizar(String(s || "")); let p = 0;
+  const peek = () => t[p];
+  const expr = () => { let a = termo(); while (peek()?.t === "op" && "+-".includes(peek().v)){ const o = t[p++].v; a = { o, a, b: termo() }; } return a; };
+  const termo = () => { let a = fator(); while (peek()?.t === "op" && "*/".includes(peek().v)){ const o = t[p++].v; a = { o, a, b: fator() }; } return a; };
+  const fator = () => {
+    const k = t[p++];
+    if (!k) throw new Error("A fórmula termina no meio de uma conta");
+    if (k.t === "n") return { n: k.v };
+    if (k.t === "id"){ if (chaves && !chaves.includes(k.v)) throw new Error(`"${k.v}" não é uma coluna deste modelo`); return { id: k.v }; }
+    if (k.v === "("){ const e = expr(); if (peek()?.v !== ")") throw new Error("Falta fechar um parêntese"); p++; return e; }
+    if (k.v === "-") return { o:"neg", a: fator() };
+    throw new Error(`"${k.v}" está fora de lugar`);
+  };
+  if (!t.length) throw new Error("A fórmula está vazia");
+  const ast = expr();
+  if (p < t.length) throw new Error(`"${t[p].v}" está fora de lugar`);
+  return ast;
+}
+function avaliar(n, v){
+  if ("n" in n) return n.n;
+  if ("id" in n) return num(v[n.id]);
+  if (n.o === "neg") return -avaliar(n.a, v);
+  const a = avaliar(n.a, v), b = avaliar(n.b, v);
+  return n.o === "+" ? a + b : n.o === "-" ? a - b : n.o === "*" ? a * b : (b === 0 ? 0 : a / b);
+}
+const ehGranito = m => m?.especial === "granito";
+const CHAVES_GRANITO = { comp: "Comprimento", larg: "Largura", testeira: "Testeira", respaldo: "Respaldo" };
+const CHAVES_RESERVADAS = ["area_unit"];
+const chaveTravada = (m, c) => ehGranito(m) && c.chave in CHAVES_GRANITO;
+const chavesDe = m => [...(m.campos || []).map(c => c.chave), ...(ehGranito(m) ? ["area_unit"] : [])];
+const rotuloInsumo = m => m.rotuloInsumo || "Insumo";
+function tiposPadraoGranito(){
+  const t = (nome, rC, rL, tC, tL) => ({ id: uid(), nome, rC, rL, tC, tL });
+  return [t("NA (sem testeira e respaldo)", 0, 0, 0, 0), t("Bancada - 1 contato", 1, 0, 1, 2), t("Bancada - 2 contatos", 1, 1, 1, 1), t("Bancada - 3 contatos", 1, 2, 1, 0)];
+}
+// área de uma peça de granito em m²: tampo + respaldo nos lados que encostam + testeira nos lados livres
+function areaGranito(m, it, vars){
+  const C = num(vars.comp), L = num(vars.larg), T = num(vars.testeira), Rp = num(vars.respaldo);
+  const tampo = C * L / 1e4;
+  const t = (m.tiposBancada || []).find(x => x.id === it.tipoBancada);
+  if (!t) return { tampo, testeira: 0, respaldo: 0, total: tampo, semTipo: true };
+  const respaldo = (num(t.rC) * C + num(t.rL) * L) * Rp / 1e4;
+  const testeira = (num(t.tC) * C + num(t.tL) * L) * T / 1e4;
+  return { tampo, testeira, respaldo, total: tampo + testeira + respaldo, tipo: t.nome };
+}
+function formulaLegivel(m){
+  const nomes = Object.fromEntries((m.campos || []).map(c => [c.chave, c.nome])); nomes.area_unit = "Área unitária (m²)";
+  try {
+    return tokenizar(String(m.formula || "")).map(t => t.t === "id" ? `[${nomes[t.v] || t.v}]` : t.t === "n" ? String(t.v).replace(".", ",")
+      : t.v === "*" ? " × " : t.v === "/" ? " ÷ " : t.v === "+" ? " + " : t.v === "-" ? " − " : t.v).join("").replace(/\s+/g, " ").trim();
+  } catch { return String(m.formula || ""); }
+}
+
+/* ---------------- modelos padrão (cadastrados na primeira vez) ---------------- */
+function campo(nome, nivel, unidade = "", ch){ return { id: uid(), chave: ch || slug(nome), nome, nivel, unidade }; }
+function modelosPadrao(){
+  const pav = (extra = {}) => ({ usaNivel2: true, nivel2Nome: "Pavimento", unidade: "un", valorGlobal: false, descritivas: [], ...extra });
+  const REP_N2 = () => campo("Repetições", "n2", "", "repeticoes");
+  const AP_PAV = () => campo("AP / Pav", "n2", "", "ap_pav");
+  const QTD_AP = () => campo("Qtd / AP", "item", "", "qtd_ap");
+  const REP_IT = () => campo("Repetições", "item", "", "repeticoes");
+  const QTD_U = (nome = "Qtd unitária") => campo(nome, "item", "", "qtd_unit");
+  const D = n => ({ id: uid(), nome: n });
+  const lista = [
+    { nome:"Louças", ...pav({ unidade:"pç" }), campos:[REP_N2(), QTD_AP(), AP_PAV()], formula:"repeticoes * qtd_ap * ap_pav" },
+    { nome:"Metais", ...pav({ unidade:"pç" }), campos:[REP_N2(), QTD_AP(), AP_PAV()], formula:"repeticoes * qtd_ap * ap_pav" },
+    { nome:"Fechaduras e dobradiças", ...pav({ unidade:"pç", descritivas:[D("Linha"), D("Máquina")] }), campos:[REP_N2(), QTD_U("Qtd por pavimento")], formula:"repeticoes * qtd_unit" },
+    { nome:"Rodapé", ...pav({ unidade:"m", descritivas:[D("Ambiente")] }), campos:[REP_IT(), QTD_U("Qtd unitária (m)")], formula:"repeticoes * qtd_unit" },
+    { nome:"Massas e tintas", ...pav({ descritivas:[D("Ambiente")] }), campos:[REP_IT(), QTD_U()], formula:"repeticoes * qtd_unit" },
+    { nome:"Drywall", ...pav(), campos:[REP_IT(), QTD_U()], formula:"repeticoes * qtd_unit" },
+    { nome:"Blocos", ...pav(), campos:[REP_IT(), QTD_U()], formula:"repeticoes * qtd_unit" },
+    { nome:"Argamassas", ...pav({ unidade:"kg" }), campos:[REP_IT(), QTD_U()], formula:"repeticoes * qtd_unit" },
+    { nome:"Gás", ...pav(), campos:[REP_IT(), QTD_U()], formula:"repeticoes * qtd_unit" },
+    { nome:"Prumada", usaNivel2:false, nivel2Nome:"Grupo", unidade:"m", valorGlobal:false, descritivas:[], campos:[campo("Quantidade", "item", "", "qtd")], formula:"qtd" },
+    { nome:"Revestimento", usaNivel2:true, nivel2Nome:"Tipo", unidade:"m²", valorGlobal:false, descritivas:[], campos:[campo("Área (m²)", "item", "m²", "area"), campo("Perda (%)", "item", "%", "perda")], formula:"area * (1 + perda / 100)" },
+    { nome:"Subestação", usaNivel2:true, nivel2Nome:"Subsistema", unidade:"un", valorGlobal:false, descritivas:[], campos:[campo("Quantidade", "item", "", "qtd")], formula:"qtd" },
+    { nome:"Portas", ...pav({ descritivas:[D("Dimensão"), D("Núcleo"), D("Acabamento externo"), D("Largura alisar"), D("Esp. mín."), D("Esp. máx.")] }),
+      campos:[campo("Batente 10+5", "item", "", "bat_10_5"), campo("Batente 12+5", "item", "", "bat_12_5"), campo("Batente 12+7", "item", "", "bat_12_7")], formula:"bat_10_5 + bat_12_5 + bat_12_7" },
+    { nome:"Portas corta-fogo", usaNivel2:false, nivel2Nome:"Grupo", unidade:"un", valorGlobal:false, descritivas:[D("Dimensão"), D("Classe"), D("Sentido de giro")], campos:[campo("Quantidade", "item", "", "qtd")], formula:"qtd" },
+    { nome:"Disjuntores", usaNivel2:false, nivel2Nome:"Grupo", unidade:"vb", valorGlobal:true, descritivas:[], campos:[campo("Quantidade", "item", "", "qtd")], formula:"qtd" },
+    { nome:"Interruptores e tomadas", usaNivel2:false, nivel2Nome:"Grupo", unidade:"vb", valorGlobal:true, descritivas:[], campos:[campo("Quantidade", "item", "", "qtd")], formula:"qtd" },
+  ];
+  lista.push(modeloGranito());
+  return lista.map(m => ({ id: uid(), ...m }));
+}
+function modeloGranito(){
+  const D = n => ({ id: uid(), nome: n });
+  return { nome: "Granito", especial: "granito", usaNivel2: true, nivel2Nome: "Tipologia", unidade: "m²", valorGlobal: false, rotuloInsumo: "Pedra / especificação",
+    descritivas: [D("Peça"), D("Ambiente")],
+    campos: [campo("Repetições", "item", "", "repeticoes"), campo("Comprimento", "item", "cm", "comp"), campo("Largura", "item", "cm", "larg"), campo("Testeira", "item", "cm", "testeira"), campo("Respaldo", "item", "cm", "respaldo")],
+    formula: "repeticoes * area_unit", tiposBancada: tiposPadraoGranito() };
+}
+
+/* ---------------- estado ---------------- */
+const S = {
+  user: null, view: "login",
+  obras: [], modelos: [], incc: [], embalagens: [],
+  obraId: null, obraTab: "qqps", qqps: [], obraEdit: null, obraDirty: false,
+  modeloEdit: null, modeloDirty: false, previa: {},
+  id: null, q: null, versao: 0, dirty: false, salvando: false, salvoEm: null,
+  tab: "comp", fechados: new Set(), ocultos: new Set(), unsub: null, remotoPendente: null,
+  inccEdit: null, inccDirty: false
+};
+const obraAtual = () => S.obras.find(o => o.id === S.obraId);
+const modeloPorId = id => S.modelos.find(m => m.id === id);
+
+function normalizarQQP(q){
+  q.modelo ??= { campos: [], formula: "0", descritivas: [], usaNivel2: true, nivel2Nome: "Pavimento", unidade: "un" };
+  q.modelo.campos ??= []; q.modelo.descritivas ??= [];
+  q.insumos ??= []; q.fornecedores ??= []; q.ofertas ??= []; q.grupos ??= []; q.incc ??= {};
+  q.fornecedores.forEach(f => { f.id ??= uid(); f.ajustes ??= {}; f.ajustes.outros ??= []; });
+  q.insumos.forEach(i => { i.id ??= uid(); });
+  q.ofertas.forEach(o => { o.id ??= uid(); });
+  q.grupos.forEach(g => { g.id ??= uid(); g.n2 ??= [];
+    if (!g.n2.length) g.n2.push({ id: uid(), nome: "", valores: {}, itens: [] });
+    g.n2.forEach(p => { p.id ??= uid(); p.valores ??= {}; p.itens ??= [];
+      p.itens.forEach(i => { i.id ??= uid(); i.valores ??= {}; i.desc ??= {}; i.escolhas ??= {}; i.pers ??= []; }); }); });
+  return q;
+}
+const todosItens = q => q.grupos.flatMap(g => g.n2.flatMap(p => p.itens));
+const insumoDe = (q, id) => q.insumos.find(i => i.id === id);
+const unidadeInsumo = (q, ins) => (ins?.unidade || q.modelo.unidade || "un");
+const fornVisiveis = q => q.fornecedores.filter(f => !S.ocultos.has(f.id));
+
+/* ---------------- INCC ---------------- */
+function inccValor(mes){ return S.incc.find(x => x.mes === mes)?.valor ?? null; }
+function inccDaQQP(q){
+  const i = q.incc || {};
+  const base = i.mesBase ? inccValor(i.mesBase) : num(i.base) || null;
+  const atual = i.mesAtual ? inccValor(i.mesAtual) : num(i.atual) || null;
+  const fator = base > 0 && atual > 0 ? atual / base : 1;
+  const faltando = (i.mesBase && !inccValor(i.mesBase)) || (i.mesAtual && !inccValor(i.mesAtual));
+  return { base, atual, fator, faltando };
+}
+
+/* ---------------- cálculo ---------------- */
+function precoUn(o, global){ return global ? num(o.preco) : num(o.preco) / (num(o.contem) || 1); }
+function ofertasDe(q, insumoId, fornId){
+  return q.ofertas.filter(o => o.insumoId === insumoId && o.fornId === fornId);
+}
+function calc(q){
+  const F = q.fornecedores, m = q.modelo;
+  let ast = null, erroFormula = null;
+  try { ast = compilar(m.formula, chavesDe(m)); } catch (e){ erroFormula = e.message; }
+  const { fator, base: inccBase, atual: inccAtual, faltando: inccFaltando } = inccDaQQP(q);
+  const zero = () => Object.fromEntries(F.map(f => [f.id, { total: 0, falta: 0 }]));
+  const R = { fator, inccBase, inccAtual, inccFaltando, erroFormula, total: zero(), orc: 0, orcCorr: 0, grupos: {}, n2: {}, itens: {}, insumos: new Map(), final: {} };
+  const porInsumoForn = {};
+  for (const o of q.ofertas){ ((porInsumoForn[o.insumoId] ??= {})[o.fornId] ??= []).push(o); }
+  for (const g of q.grupos){
+    const G = { total: zero(), orc: num(g.orcamento), qtd: 0 };
+    R.grupos[g.id] = G;
+    for (const p of g.n2){
+      const P = { total: zero(), qtd: 0, orc: 0 }; R.n2[p.id] = P;
+      for (const it of p.itens){
+        const vars = { ...p.valores };
+        for (const [k, v] of Object.entries(it.valores || {})) if (v !== null && v !== "" && v !== undefined) vars[k] = v;
+        let partes = null;
+        if (ehGranito(m)){ partes = areaGranito(m, it, vars); vars.area_unit = partes.total; }
+        const qtdBase = it.global ? 1 : (ast ? avaliar(ast, vars) : 0);
+        const persSoma = it.global ? 0 : (it.pers || []).reduce((t, x) => t + num(x.qtd), 0);
+        const qtd = qtdBase + persSoma;
+        const orcIt = it.orcValor == null ? 0 : (it.orcModo === "unit" ? num(it.orcValor) * qtd : num(it.orcValor));
+        P.qtd += it.global ? 0 : qtd; G.qtd += it.global ? 0 : qtd;
+        P.orc += orcIt; G.orc += orcIt;
+        const I = { qtd, base: qtdBase, persSoma, nPers: (it.pers || []).length, vars, orc: orcIt, por: {}, partes };
+        const ins = insumoDe(q, it.insumoId);
+        const k = it.insumoId || "_sem";
+        if (!R.insumos.has(k)) R.insumos.set(k, { id: it.insumoId, nome: ins?.nome || "(sem insumo)", un: unidadeInsumo(q, ins), qtd: 0, total: zero(), itens: [], escolhidas: {} });
+        const INS = R.insumos.get(k); INS.qtd += it.global ? 0 : qtd; INS.itens.push(it);
+        for (const f of F){
+          const ops = (porInsumoForn[it.insumoId]?.[f.id] || []);
+          const escId = it.escolhas?.[f.id];
+          let o = null, auto = false;
+          if (escId === "__none") o = null;
+          else if (escId && ops.find(x => x.id === escId)) o = ops.find(x => x.id === escId);
+          else if (ops.length){ o = ops.reduce((a, b) => precoUn(b, it.global) < precoUn(a, it.global) ? b : a); auto = true; }
+          if (o){
+            const unit = precoUn(o, it.global), tot = it.global ? unit : qtd * unit;
+            I.por[f.id] = { o, unit, total: tot, auto, n: ops.length };
+            for (const X of [P, G, R, INS]) X.total[f.id].total += tot;
+            (INS.escolhidas[f.id] ??= new Set()).add(o.id);
+          } else {
+            I.por[f.id] = { o: null, n: ops.length, none: escId === "__none" };
+            if (qtd > 0 || it.global) for (const X of [P, G, R, INS]) X.total[f.id].falta++;
+          }
+        }
+        const vals = F.filter(f => !S.ocultos.has(f.id)).map(f => I.por[f.id]).filter(x => x.o).map(x => x.total);
+        I.min = vals.length > 1 ? Math.min(...vals) : null;
+        const embs = new Set(F.map(f => I.por[f.id]).filter(x => x.o && x.o.unidVenda).map(x => chave(x.o.unidVenda) + "|" + num(x.o.contem)));
+        I.embalagensDiferentes = embs.size > 1;
+        R.itens[it.id] = I;
+      }
+    }
+    R.orc += G.orc;
+  }
+  R.orcCorr = R.orc * fator;
+  for (const f of F){
+    const a = f.ajustes || {}, base = R.total[f.id].total;
+    const desconto = base * num(a.descontoPct) / 100 + num(a.descontoValor);
+    const outros = (a.outros || []).reduce((s, x) => s + num(x.valor), 0);
+    const ajuste = num(a.frete) + outros - desconto;
+    R.final[f.id] = { base, ajuste, total: base + ajuste, falta: R.total[f.id].falta };
+  }
+  return R;
+}
+function menorDe(tot, F){
+  const ok = F.filter(f => tot[f.id].falta === 0 && tot[f.id].total > 0).map(f => tot[f.id].total);
+  return ok.length > 1 ? Math.min(...ok) : null;
+}
+function resumoPara(q){
+  const R = calc(q);
+  const totais = q.fornecedores.map(f => ({ nome: f.nome || "?", total: R.final[f.id].total, falta: R.final[f.id].falta }))
+    .sort((a, b) => (a.falta - b.falta) || (a.total - b.total));
+  return { totais, orcCorr: R.orcCorr, itens: Object.keys(R.itens).length };
+}
+
+/* ---------------- autenticação e carregamento ---------------- */
+onAuthStateChanged(auth, async user => {
+  S.user = user;
+  if (!user){ fecharQQP(); S.view = "login"; return render(); }
+  S.view = "carregando"; render();
+  try { await carregarBase(); S.view = "obras"; }
+  catch (ex){ console.error(ex); S.view = "erro"; S.erro = ex.message; }
+  render();
+});
+async function carregarBase(){
+  const [obs, mods, inc, emb] = await Promise.all([
+    getDocs(collection(db, C_OBRA)), getDocs(collection(db, C_MOD)),
+    getDoc(doc(db, C_CFG, "incc")), getDoc(doc(db, C_CFG, "embalagens"))
+  ]);
+  S.obras = obs.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
+  S.modelos = mods.docs.map(d => ({ id: d.id, ...d.data() }));
+  if (!S.modelos.length){
+    const padrao = modelosPadrao();
+    await Promise.all(padrao.map(m => { const { id, ...r } = m; return setDoc(doc(db, C_MOD, id), r); }));
+    S.modelos = padrao;
+  }
+  // migração: instalações que já tinham modelos ganham o modelo de granito uma única vez
+  const mig = await getDoc(doc(db, C_CFG, "migracoes")); const migs = mig.exists() ? mig.data() : {};
+  if (!migs.granito){
+    if (!S.modelos.some(ehGranito)){ const g = { id: uid(), ...modeloGranito() }; const { id, ...r } = g; await setDoc(doc(db, C_MOD, id), r); S.modelos.push(g); }
+    await setDoc(doc(db, C_CFG, "migracoes"), { ...migs, granito: true });
+  }
+  S.modelos.sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
+  S.incc = (inc.exists() ? inc.data().serie : []) || [];
+  S.incc.sort((a, b) => a.mes.localeCompare(b.mes));
+  S.embalagens = (emb.exists() ? emb.data().lista : []) || [];
+}
+
+function telaLogin(){
+  app.innerHTML = `
+  <div class="login"><form id="fLogin" autocomplete="on">
+    <h1>QQP</h1>
+    <p class="sub">Quadro de quantitativos e preços das compras programadas.</p>
+    <div class="field"><label for="lEmail">E-mail</label><input id="lEmail" type="email" required autocomplete="username"></div>
+    <div class="field"><label for="lSenha">Senha</label><input id="lSenha" type="password" required autocomplete="current-password"></div>
+    <p class="msg-erro" id="lErro"></p>
+    <button class="btn primary" style="width:100%;justify-content:center;padding:.65em" id="lBtn">Entrar</button>
+  </form></div>`;
+  document.getElementById("fLogin").onsubmit = async e => {
+    e.preventDefault();
+    const btn = document.getElementById("lBtn"), err = document.getElementById("lErro");
+    btn.disabled = true; btn.textContent = "Entrando…"; err.textContent = "";
+    try { await signInWithEmailAndPassword(auth, document.getElementById("lEmail").value.trim(), document.getElementById("lSenha").value); }
+    catch (ex){
+      const c = ex.code || "";
+      err.textContent = c.includes("invalid") || c.includes("wrong-password") || c.includes("user-not-found")
+        ? "E-mail ou senha incorretos." : c.includes("too-many") ? "Muitas tentativas. Aguarde alguns minutos e tente de novo."
+        : c.includes("network") ? "Sem conexão com a internet." : "Não foi possível entrar (" + c + ").";
+      btn.disabled = false; btn.textContent = "Entrar";
+    }
+  };
+}
+
+/* ---------------- barra superior ---------------- */
+function topo(crumbs = "", direita = ""){
+  const sec = ["obras", "obra", "qqp"].includes(S.view) ? "obras" : S.view.startsWith("modelo") ? "modelos" : S.view;
+  return `<header class="top">
+    <button class="brand" data-act="irObras">QQP</button>
+    <nav class="menu" aria-label="Seções">
+      <button data-act="irObras" aria-current="${sec === "obras"}">Obras</button>
+      <button data-act="irModelos" aria-current="${sec === "modelos"}">Modelos</button>
+      <button data-act="irIncc" aria-current="${sec === "incc"}">INCC</button>
+    </nav>
+    ${crumbs ? `<nav class="crumbs" aria-label="Local">${crumbs}</nav>` : ""}
+    <div class="spacer"></div>${direita}
+    ${S.view === "qqp" ? "" : `<span class="user">${esc(S.user?.email)}</span><button class="btn sm" data-act="sair">Sair</button>`}
+  </header>`;
+}
+
+/* ---------------- obras ---------------- */
+async function carregarQQPsDaObra(){
+  const snap = await getDocs(query(collection(db, C_QQP), where("obraId", "==", S.obraId)));
+  S.qqps = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (a.pacote || "").localeCompare(b.pacote || "") || (b.revisao || "").localeCompare(a.revisao || ""));
+}
+function telaObras(){
+  return topo() + `<main><div class="wrap">
+    <div class="bar"><h2>Obras</h2><div class="spacer"></div><button class="btn primary" data-act="novaObra">Nova obra</button></div>
+    ${S.obras.length ? `<div class="obras">${S.obras.map(o => `
+      <button class="obra-card" data-act="abrirObra" data-id="${o.id}">
+        <span class="nome">${esc(o.nome)}</span>
+        <span class="meta">${esc([o.codigo, o.cidade].filter(Boolean).join(" – ")) || "&nbsp;"}</span>
+        <span class="meta">${o.estrutura?.grupos?.length ? `Estrutura cadastrada: ${o.estrutura.grupos.reduce((s, g) => s + (g.n2?.length || 0), 0)} pavimentos` : "Sem estrutura pré-montada"}</span>
+      </button>`).join("")}</div>`
+    : `<div class="vazio"><h3>Nenhuma obra cadastrada</h3><p>Cada obra reúne as QQPs das suas carteiras de insumo. Comece criando a primeira.</p><button class="btn primary" data-act="novaObra">Nova obra</button></div>`}
+  </div></main>`;
+}
+function telaObra(){
+  const o = obraAtual(); if (!o) return telaObras();
+  const crumbs = `<span class="sep">/</span><b>${esc(o.nome)}</b>`;
+  const tabs = `<div class="sub-tabs" role="tablist">
+      <button role="tab" aria-selected="${S.obraTab === "qqps"}" data-act="obraTab" data-tab="qqps">QQPs</button>
+      <button role="tab" aria-selected="${S.obraTab === "estrutura"}" data-act="obraTab" data-tab="estrutura">Estrutura pré-montada</button>
+      <button role="tab" aria-selected="${S.obraTab === "dados"}" data-act="obraTab" data-tab="dados">Dados da obra</button></div>`;
+  let corpo = "";
+  if (S.obraTab === "qqps") corpo = obraQQPs();
+  else if (S.obraTab === "estrutura") corpo = obraEstrutura();
+  else corpo = obraDados(o);
+  return topo(crumbs) + `<main><div class="wrap">
+    <div class="bar"><h2>${esc(o.nome)}</h2><div class="spacer"></div>${S.obraTab === "qqps" ? `<button class="btn primary" data-act="novaQQP">Nova QQP</button>` : ""}</div>
+    ${tabs}${corpo}</div></main>`;
+}
+function obraQQPs(){
+  if (S.qqpsCarregando) return `<div class="carregando">Carregando QQPs…</div>`;
+  if (!S.qqps.length) return `<div class="vazio"><h3>Nenhuma QQP nesta obra</h3><p>Crie uma QQP escolhendo a carteira de insumo. Se a obra tiver estrutura pré-montada, você pode partir dela.</p><button class="btn primary" data-act="novaQQP">Nova QQP</button></div>`;
+  const porCarteira = new Map();
+  S.qqps.forEach(x => { const k = x.pacote || "Sem carteira"; if (!porCarteira.has(k)) porCarteira.set(k, []); porCarteira.get(k).push(x); });
+  return [...porCarteira.entries()].map(([cart, lst]) => `
+    <section class="carteira"><h3>${esc(cart)}</h3>
+    <table class="lista"><thead><tr><th style="width:70px">Rev.</th><th>Data</th><th>Forn.</th><th>Menor proposta</th><th class="n">Valor</th><th class="n">Saving</th><th>Atualizado</th><th></th></tr></thead><tbody>
+    ${lst.map(x => {
+      const r = x.resumo || {}; const m = (r.totais || [])[0];
+      const sav = m && r.orcCorr ? r.orcCorr - m.total : null;
+      const quando = x.atualizadoEm?.toDate ? x.atualizadoEm.toDate().toLocaleString("pt-BR", {dateStyle:"short", timeStyle:"short"}) : "";
+      return `<tr class="click" data-act="abrirQQP" data-id="${x.id}">
+        <td class="obra">${esc(x.revisao)}</td><td>${esc(dataBR(x.data))}</td><td>${(x.fornecedores || []).length}</td>
+        <td>${m ? esc(m.nome) + (m.falta ? ` <span style="color:var(--warn)">(incompleto)</span>` : "") : "—"}</td>
+        <td class="n">${m ? brl(m.total) : "—"}</td>
+        <td class="n ${sav === null ? "" : sav >= 0 ? "pos" : "neg"}">${sav === null ? "—" : brl(sav)}</td>
+        <td style="color:var(--muted);font-size:13px">${esc(quando)}</td>
+        <td class="acoes"><button class="btn sm" data-act="duplicarQQP" data-id="${x.id}" title="Criar nova revisão a partir desta">Nova revisão</button>
+          <button class="icon del" data-act="excluirQQP" data-id="${x.id}" title="Excluir QQP" aria-label="Excluir QQP">✕</button></td></tr>`;
+    }).join("")}</tbody></table></section>`).join("");
+}
+function obraDados(o){
+  return `<div class="form-grid" style="max-width:820px">
+      <div class="field"><label for="oNome">Nome da obra</label><input id="oNome" value="${esc(o.nome)}"></div>
+      <div class="field"><label for="oCod">Código</label><input id="oCod" value="${esc(o.codigo)}"></div>
+      <div class="field"><label for="oCid">Cidade</label><input id="oCid" value="${esc(o.cidade)}"></div>
+    </div>
+    <div class="bar"><button class="btn primary" data-act="salvarDadosObra">Salvar dados da obra</button><div class="spacer"></div>
+      <button class="btn danger" data-act="excluirObra">Excluir obra</button></div>`;
+}
+// campos de nível 2 conhecidos (união de todos os modelos)
+function camposN2Conhecidos(){
+  const mapa = new Map();
+  S.modelos.forEach(m => (m.campos || []).filter(c => c.nivel === "n2").forEach(c => { if (!mapa.has(c.chave)) mapa.set(c.chave, c); }));
+  return [...mapa.values()];
+}
+function obraEstrutura(){
+  const E = S.obraEdit; const campos = camposN2Conhecidos();
+  let h = "";
+  E.grupos.forEach((g, gi) => {
+    h += `<tr class="l1"><td class="c0" colspan="${1 + campos.length}"><div class="grp-flex">
+        <input class="in" style="flex:1" data-obind="grupos.${gi}.nome" value="${esc(g.nome)}" placeholder="Agrupador (ex.: Torre, Smart, Garden)"></div></td>
+      <td class="acoes"><button class="icon" data-act="oMov" data-g="${gi}" data-d="-1" aria-label="Subir">▲</button><button class="icon" data-act="oMov" data-g="${gi}" data-d="1" aria-label="Descer">▼</button><button class="icon del" data-act="oDel" data-g="${gi}" aria-label="Excluir agrupador">✕</button></td></tr>`;
+    g.n2.forEach((p, pi) => {
+      h += `<tr class="l2"><td class="c0"><input class="in" data-obind="grupos.${gi}.n2.${pi}.nome" value="${esc(p.nome)}" placeholder="Pavimento (ex.: PAV TIPO 1 AO 8)"></td>
+        ${campos.map(c => `<td><input class="in num" data-obind="grupos.${gi}.n2.${pi}.valores.${c.chave}" data-tipo="num" inputmode="decimal" value="${esc(inVal(p.valores?.[c.chave]))}" aria-label="${esc(c.nome)}"></td>`).join("")}
+        <td class="acoes"><button class="icon" data-act="oMov" data-g="${gi}" data-p="${pi}" data-d="-1" aria-label="Subir">▲</button><button class="icon" data-act="oMov" data-g="${gi}" data-p="${pi}" data-d="1" aria-label="Descer">▼</button><button class="icon del" data-act="oDel" data-g="${gi}" data-p="${pi}" aria-label="Excluir pavimento">✕</button></td></tr>`;
+    });
+    h += `<tr class="addrow"><td class="c0" style="padding-left:22px"><button class="btn sm" data-act="oAddN2" data-g="${gi}">+ Pavimento</button></td><td colspan="${campos.length + 1}"></td></tr>`;
+  });
+  return `<p class="lead">Opcional. Os pavimentos cadastrados aqui podem ser usados como ponto de partida ao criar uma QQP. Alterar a estrutura depois não muda as QQPs já criadas.</p>
+    <div class="bar"><button class="btn" data-act="oAddG">+ Agrupador</button><div class="spacer"></div>
+      <span class="status ${S.obraDirty ? "dirty" : ""}" style="color:${S.obraDirty ? "var(--warn)" : "var(--muted)"};font-size:13px">${S.obraDirty ? "Alterações não salvas" : ""}</span>
+      <button class="btn primary" data-act="salvarEstrutura">Salvar estrutura</button></div>
+    ${E.grupos.length ? `<div class="scroller" id="scEst"><table class="qqp"><thead><tr><th class="c0">Agrupador / pavimento</th>${campos.map(c => `<th class="cq">${esc(c.nome)}</th>`).join("")}<th class="acoes"></th></tr></thead><tbody>${h}</tbody></table></div>`
+      : `<div class="vazio"><h3>Sem estrutura pré-montada</h3><p>Você pode cadastrar aqui, ou montar os pavimentos dentro de uma QQP e depois usar "Salvar pavimentos como estrutura da obra".</p><button class="btn primary" data-act="oAddG">+ Agrupador</button></div>`}`;
+}
+
+/* ---------------- modelos ---------------- */
+function telaModelos(){
+  return topo() + `<main><div class="wrap">
+    <div class="bar"><h2>Modelos de quantitativos</h2><div class="spacer"></div><button class="btn primary" data-act="novoModelo">Novo modelo</button></div>
+    <p class="lead">Cada carteira de insumo usa um modelo, que define as colunas de quantidade e a fórmula do total. Editar um modelo não altera QQPs já criadas.</p>
+    <table class="lista modelo-lista"><thead><tr><th>Carteira</th><th>Fórmula do total</th><th>Nível 2</th><th>Unidade</th><th></th></tr></thead><tbody>
+    ${S.modelos.map(m => `<tr class="click" data-act="abrirModelo" data-id="${m.id}">
+      <td class="obra">${esc(m.nome)}${ehGranito(m) ? `<span class="tag">área de bancada</span>` : ""}${m.valorGlobal ? `<span class="tag">valor global</span>` : ""}${m.especial ? `<span class="tag">regra especial</span>` : ""}</td>
+      <td><p class="legivel">${esc(formulaLegivel(m))}</p></td>
+      <td>${m.usaNivel2 ? esc(m.nivel2Nome) : `<span style="color:var(--faint)">não usa</span>`}</td>
+      <td>${esc(m.unidade)}</td>
+      <td class="acoes"><button class="btn sm" data-act="duplicarModelo" data-id="${m.id}">Duplicar</button></td></tr>`).join("")}
+    </tbody></table></div></main>`;
+}
+const camposComVirtual = m => [...m.campos, ...(ehGranito(m) ? [{ chave: "area_unit", nome: "Área unitária (m²)" }] : [])];
+const chipsCampos = m => camposComVirtual(m).map(c => `<button class="chip" data-act="mIns" data-t="${esc(c.chave)}">${esc(c.nome || c.chave)}</button>`).join("");
+const previaCampos = m => camposComVirtual(m).map(c => `<div class="mini"><label>${esc(c.nome || c.chave)}</label><input data-previa="${esc(c.chave)}" inputmode="decimal" value="${esc(inVal(S.previa[c.chave] ?? 2))}" aria-label="Valor de exemplo para ${esc(c.nome)}"></div>`).join("");
+function previaValores(m){ return Object.fromEntries(camposComVirtual(m).map(c => [c.chave, S.previa[c.chave] ?? 2])); }
+function secaoTiposBancada(m){
+  if (!ehGranito(m)) return "";
+  const ex = { C: 127, L: 50, T: 5, R: 14 };
+  return `<section class="secao"><h3>Tipos de bancada</h3>
+    <p class="lead">Área unitária = comprimento × largura + respaldo × (lados do comprimento e das larguras que encostam na parede) + testeira × (lados livres). Informe quantos lados de cada medida recebem respaldo e testeira (0, 1 ou 2). A área unitária entra na fórmula do total como [Área unitária (m²)].</p>
+    <table class="campos"><thead><tr><th>Tipo</th><th style="width:105px">Respaldo no comprimento</th><th style="width:105px">Respaldo nas larguras</th><th style="width:105px">Testeira no comprimento</th><th style="width:105px">Testeira nas larguras</th><th style="width:130px">Exemplo 127×50, T5, R14</th><th style="width:40px"></th></tr></thead><tbody>
+    ${(m.tiposBancada || []).map((t, ti) => { const a = (ex.C * ex.L + (num(t.rC) * ex.C + num(t.rL) * ex.L) * ex.R + (num(t.tC) * ex.C + num(t.tL) * ex.L) * ex.T) / 1e4;
+      return `<tr><td><input data-mbind="tiposBancada.${ti}.nome" value="${esc(t.nome)}" aria-label="Nome do tipo"></td>
+      ${["rC", "rL", "tC", "tL"].map(k => `<td><input data-mbind="tiposBancada.${ti}.${k}" data-tipo="num" inputmode="numeric" value="${esc(inVal(t[k]))}" style="text-align:center" aria-label="${k}"></td>`).join("")}
+      <td style="text-align:right;font-variant-numeric:tabular-nums" data-ex="${ti}">${qtdF(a)} m²</td>
+      <td><button class="icon del" data-act="mDelTipo" data-i="${ti}" aria-label="Excluir tipo">✕</button></td></tr>`; }).join("")}
+    </tbody></table>
+    <div style="margin-top:8px"><button class="btn sm" data-act="mAddTipo">+ Tipo de bancada</button></div></section>`;
+}
+function telaModelo(){
+  const m = S.modeloEdit;
+  const chaves = m.campos.map(c => c.chave);
+  let erro = null, res = null;
+  try { const ast = compilar(m.formula, chavesDe(m)); res = avaliar(ast, previaValores(m)); } catch (e){ erro = e.message; }
+  const crumbs = `<span class="sep">/</span><button data-act="irModelos">Modelos</button><span class="sep">/</span><b>${esc(m.nome || "Novo modelo")}</b>`;
+  return topo(crumbs) + `<main><div class="wrap" style="max-width:980px">
+    <div class="bar"><h2>${esc(m.nome || "Novo modelo")}</h2><div class="spacer"></div>
+      <span style="color:${S.modeloDirty ? "var(--warn)" : "var(--muted)"};font-size:13px">${S.modeloDirty ? "Alterações não salvas" : ""}</span>
+      ${m._novo ? "" : `<button class="btn danger" data-act="excluirModelo">Excluir</button>`}
+      <button class="btn primary" data-act="salvarModelo">Salvar modelo</button></div>
+    <section class="secao"><h3>Identificação</h3>
+      <div class="form-grid" style="border:0;padding:0;margin:8px 0 0">
+        <div class="field"><label for="mNome">Nome da carteira</label><input id="mNome" data-mbind="nome" value="${esc(m.nome)}" placeholder="Ex.: Impermeabilização"></div>
+        <div class="field"><label for="mUn">Unidade padrão dos insumos</label><input id="mUn" data-mbind="unidade" value="${esc(m.unidade)}" placeholder="un, m, m², kg"></div>
+        <div class="field"><label for="mEsp">Regra especial de cálculo</label><select id="mEsp" data-mesp="1">
+          <option value="" ${!m.especial ? "selected" : ""}>Nenhuma (só a fórmula)</option>
+          <option value="granito" ${ehGranito(m) ? "selected" : ""}>Área de bancada</option></select></div>
+        <div class="field"><label for="mN2">Nome do nível 2</label><input id="mN2" data-mbind="nivel2Nome" value="${esc(m.nivel2Nome)}" placeholder="Pavimento, Tipologia, Subsistema" ${m.usaNivel2 ? "" : "disabled"}></div>
+      </div>
+      <label class="checkline"><input type="checkbox" data-mcheck="usaNivel2" ${m.usaNivel2 ? "checked" : ""}> Usar nível 2 (pavimentos ou outro agrupamento abaixo do agrupador)</label>
+      <label class="checkline"><input type="checkbox" data-mcheck="valorGlobal" ${m.valorGlobal ? "checked" : ""}> Novos insumos são cotados por valor global (o fornecedor informa o total, sem quantidade)</label>
+    </section>
+    <section class="secao"><h3>Colunas de quantidade</h3>
+      <p class="lead">Colunas do ${esc(m.usaNivel2 ? m.nivel2Nome || "nível 2" : "nível 2")} valem para todos os insumos dentro dele, como as repetições do pavimento. Colunas do insumo são preenchidas linha a linha; se ficarem vazias, usam o valor do nível 2 com a mesma chave.</p>
+      <table class="campos"><thead><tr><th>Nome</th><th style="width:110px">Unidade</th><th style="width:190px">Preenchida em</th><th style="width:160px">Chave na fórmula</th><th style="width:96px"></th></tr></thead><tbody>
+      ${m.campos.map((c, ci) => `<tr>
+        <td><input data-mbind="campos.${ci}.nome" value="${esc(c.nome)}" aria-label="Nome da coluna"></td>
+        <td><input data-mbind="campos.${ci}.unidade" value="${esc(c.unidade)}" aria-label="Unidade"></td>
+        <td><select data-mbind="campos.${ci}.nivel" aria-label="Nível">
+          <option value="n2" ${c.nivel === "n2" ? "selected" : ""} ${m.usaNivel2 ? "" : "disabled"}>${esc(m.nivel2Nome || "Nível 2")}</option>
+          <option value="item" ${c.nivel === "item" ? "selected" : ""}>Insumo</option></select></td>
+        <td>${chaveTravada(m, c) ? `<code title="Usada no cálculo da área do granito">${esc(c.chave)} 🔒</code>` : `<input data-mchave="${ci}" value="${esc(c.chave)}" spellcheck="false" style="font-family:var(--font-cond)" aria-label="Chave na fórmula">`}</td>
+        <td style="white-space:nowrap"><button class="icon" data-act="mMovCampo" data-i="${ci}" data-d="-1" title="Subir" aria-label="Subir">▲</button><button class="icon" data-act="mMovCampo" data-i="${ci}" data-d="1" title="Descer" aria-label="Descer">▼</button>${chaveTravada(m, c) ? "" : `<button class="icon del" data-act="mDelCampo" data-i="${ci}" aria-label="Excluir coluna">✕</button>`}</td></tr>`).join("")}
+      </tbody></table>
+      <div style="margin-top:8px"><button class="btn sm" data-act="mAddCampo">+ Coluna de quantidade</button></div>
+      <p class="lead" style="margin:10px 0 0;font-size:13px">A ordem aqui é a ordem das colunas nas QQPs. Ao trocar uma chave, a fórmula é atualizada sozinha; QQPs já criadas recebem a mudança quando você usar "Atualizar com o modelo cadastrado".</p>
+      ${ehGranito(m) && Object.keys(CHAVES_GRANITO).some(k => !m.campos.some(c => c.chave === k)) ? `<div class="banner" style="margin:10px 0 0">Faltam colunas usadas no cálculo da área do granito (${Object.entries(CHAVES_GRANITO).filter(([k]) => !m.campos.some(c => c.chave === k)).map(([, n]) => n).join(", ")}). <button class="btn sm" data-act="mRestaurarGranito">Restaurar colunas</button></div>` : ""}
+    </section>
+    <section class="secao"><h3>Fórmula do total</h3>
+      <p class="lead">Clique nas colunas e nos operadores para montar a conta, ou digite direto. Números também são aceitos, como em (1 + perda / 100).</p>
+      <div class="chips" id="mChips">${chipsCampos(m)}</div>
+      <div class="chips">${[["+", " + "], ["−", " - "], ["×", " * "], ["÷", " / "], ["(", "("], [")", ")"]].map(([l, t]) => `<button class="chip op" data-act="mIns" data-t="${t}">${l}</button>`).join("")}
+        <button class="chip op" data-act="mLimpar" style="min-width:auto">Limpar</button></div>
+      <input id="mFormula" class="formula-in" data-mbind="formula" value="${esc(m.formula)}" spellcheck="false" aria-label="Fórmula">
+      <div id="mFormulaMsg">${erro ? `<div class="formula-erro">${esc(erro)}</div>` : `<div class="formula-ok">Fórmula válida</div><div class="legivel">Total = ${esc(formulaLegivel(m))}</div>`}</div>
+      ${m.campos.length ? `<div class="previa"><span id="mPreviaCampos" style="display:contents">${previaCampos(m)}</span>
+        <div class="res" id="mPrev">= ${erro ? "—" : qtdF(res)}</div></div>` : ""}
+    </section>
+    ${secaoTiposBancada(m)}
+    <section class="secao"><h3>Colunas descritivas</h3>
+      <p class="lead">Informações do insumo que não entram na conta, como dimensão, acabamento ou cor.</p>
+      <table class="campos"><tbody>${m.descritivas.map((d, di) => `<tr><td><input data-mbind="descritivas.${di}.nome" value="${esc(d.nome)}" aria-label="Nome da coluna descritiva"></td>
+        <td style="width:96px;white-space:nowrap"><button class="icon" data-act="mMovDesc" data-i="${di}" data-d="-1" title="Subir" aria-label="Subir">▲</button><button class="icon" data-act="mMovDesc" data-i="${di}" data-d="1" title="Descer" aria-label="Descer">▼</button><button class="icon del" data-act="mDelDesc" data-i="${di}" aria-label="Excluir coluna">✕</button></td></tr>`).join("")}</tbody></table>
+      <div style="margin-top:8px"><button class="btn sm" data-act="mAddDesc">+ Coluna descritiva</button></div>
+    </section>
+  </div></main>`;
+}
+
+/* ---------------- INCC ---------------- */
+function telaIncc(){
+  const L = S.inccEdit;
+  return topo() + `<main><div class="wrap" style="max-width:760px">
+    <div class="bar"><h2>Tabela de INCC</h2><div class="spacer"></div>
+      <span style="color:${S.inccDirty ? "var(--warn)" : "var(--muted)"};font-size:13px">${S.inccDirty ? "Alterações não salvas" : ""}</span>
+      <button class="btn" data-act="inccColar">Colar do Excel</button><button class="btn primary" data-act="salvarIncc">Salvar tabela</button></div>
+    <p class="lead">Um índice por mês, usado por todas as QQPs. Cada QQP escolhe o mês do orçamento e o mês atual (T−1), e o fator de correção é calculado daqui.</p>
+    <table class="incc"><thead><tr><th>Mês</th><th>Índice</th><th style="text-align:right">Variação no mês</th><th></th></tr></thead><tbody>
+    ${L.map((x, i) => { const ant = L[i - 1]; const v = ant && num(ant.valor) ? (num(x.valor) / num(ant.valor) - 1) * 100 : null;
+      return `<tr><td><input type="month" data-ibind="${i}.mes" value="${esc(x.mes)}" aria-label="Mês"></td>
+        <td><input data-ibind="${i}.valor" data-tipo="num" inputmode="decimal" value="${esc(inVal(x.valor))}" aria-label="Índice"></td>
+        <td class="var">${v === null ? "" : v.toLocaleString("pt-BR", {maximumFractionDigits:2}) + "%"}</td>
+        <td><button class="icon del" data-act="inccDel" data-i="${i}" aria-label="Excluir mês">✕</button></td></tr>`; }).join("")}
+    </tbody></table>
+    <div style="margin-top:10px"><button class="btn sm" data-act="inccAdd">+ Mês</button></div>
+  </div></main>`;
+}
+
+/* ---------------- abrir / salvar QQP ---------------- */
+async function abrirQQP(id){
+  fecharQQP();
+  const item = S.qqps.find(x => x.id === id);
+  if (!item) return;
+  S.id = id; S.q = normalizarQQP(clone(semMeta({ ...item, atualizadoEm: null }))); S.versao = item.versao || 0;
+  S.dirty = false; S.tab = "comp"; S.ocultos = new Set();
+  S.salvoEm = item.atualizadoEm?.toDate ? item.atualizadoEm.toDate() : null;
+  S.view = "qqp"; render();
+  S.unsub = onSnapshot(doc(db, C_QQP, id), snap => {
+    if (snap.metadata?.hasPendingWrites || !snap.exists()) return;
+    const d = snap.data(); const v = d.versao || 0;
+    if (v <= S.versao) return;
+    if (!S.dirty){
+      S.q = normalizarQQP(clone(semMeta({ ...d, atualizadoEm: null }))); S.versao = v; S.salvoEm = d.atualizadoEm?.toDate?.() || new Date();
+      render(); toast("QQP atualizada com alterações salvas em outro computador.");
+    } else { S.remotoPendente = { ...d, atualizadoEm: null }; render(); }
+  });
+}
+function fecharQQP(){ if (S.unsub) S.unsub(); S.unsub = null; S.id = null; S.q = null; S.dirty = false; S.remotoPendente = null; }
+async function sairDaQQP(destino = "obra"){
+  if (S.dirty && !confirm("Há alterações não salvas nesta QQP. Sair mesmo assim?")) return false;
+  fecharQQP(); S.view = destino;
+  if (destino === "obra"){ S.qqpsCarregando = true; render(); await carregarQQPsDaObra(); S.qqpsCarregando = false; }
+  render(); return true;
+}
+async function salvar(forcar = false){
+  if (!S.q || S.salvando) return;
+  S.salvando = true; atualizarStatus();
+  const ref = S.id ? doc(db, C_QQP, S.id) : doc(collection(db, C_QQP));
+  const dados = clone(S.q);
+  dados.resumo = resumoPara(S.q);
+  try {
+    const nova = await runTransaction(db, async tx => {
+      const snap = await tx.get(ref);
+      const atual = snap.exists() ? (snap.data().versao || 0) : 0;
+      if (snap.exists() && atual !== S.versao && !forcar){ const e = new Error("conflito"); e.conflito = { ...snap.data(), atualizadoEm: null }; throw e; }
+      tx.set(ref, { ...dados, versao: atual + 1, atualizadoEm: serverTimestamp(), atualizadoPor: S.user?.email || "" });
+      return atual + 1;
+    });
+    S.id = ref.id; S.versao = nova; S.dirty = false; S.salvoEm = new Date(); S.remotoPendente = null;
+    S.salvando = false; render(); toast("QQP salva.");
+    if (!S.unsub) abrirEscuta();
+    guardarEmbalagens();
+  } catch (ex){
+    S.salvando = false; atualizarStatus();
+    if (ex.conflito){ S.remotoPendente = ex.conflito; render(); }
+    else { console.error(ex); alert("Não foi possível salvar: " + ex.message); }
+  }
+}
+function abrirEscuta(){
+  const id = S.id;
+  S.unsub = onSnapshot(doc(db, C_QQP, id), snap => {
+    if (snap.metadata?.hasPendingWrites || !snap.exists() || S.id !== id) return;
+    const d = snap.data(); if ((d.versao || 0) <= S.versao) return;
+    if (!S.dirty){ S.q = normalizarQQP(clone(semMeta({ ...d, atualizadoEm: null }))); S.versao = d.versao; render(); toast("QQP atualizada com alterações salvas em outro computador."); }
+    else { S.remotoPendente = { ...d, atualizadoEm: null }; render(); }
+  });
+}
+async function guardarEmbalagens(){
+  const novas = [];
+  for (const o of S.q.ofertas){
+    const n = String(o.unidVenda || "").trim(); if (!n || !num(o.contem)) continue;
+    if (!S.embalagens.find(e => chave(e.nome) === chave(n) && num(e.contem) === num(o.contem)) && !novas.find(e => chave(e.nome) === chave(n)))
+      novas.push({ nome: n, contem: num(o.contem) });
+  }
+  if (!novas.length) return;
+  S.embalagens = [...S.embalagens, ...novas].sort((a, b) => a.nome.localeCompare(b.nome));
+  try { await setDoc(doc(db, C_CFG, "embalagens"), { lista: S.embalagens }); } catch (e){ console.warn(e); }
+}
+function marcarAlterado(){ if (!S.dirty){ S.dirty = true; atualizarStatus(); } }
+function atualizarStatus(){
+  const el = document.getElementById("status"); if (!el) return;
+  el.className = "status" + (S.dirty ? " dirty" : "");
+  el.textContent = S.salvando ? "Salvando…" : S.dirty ? "Alterações não salvas" :
+    S.salvoEm ? "Salvo às " + S.salvoEm.toLocaleTimeString("pt-BR", {hour:"2-digit", minute:"2-digit"}) : "Não salva";
+}
+
+/* ---------------- tela da QQP ---------------- */
+const TABS = [["comp","Comparativo"],["quant","Quantitativos"],["forn","Fornecedores e preços"],["dados","Dados da QQP"]];
+function telaQQP(){
+  const q = S.q, o = obraAtual();
+  const crumbs = `<span class="sep">/</span><button data-act="voltarObra">${esc(o?.nome || "Obra")}</button><span class="sep">/</span><b>${esc([q.pacote, q.revisao].filter(Boolean).join(" "))}</b>`;
+  const dir = `<span id="status" class="status"></span><button class="btn sm" data-act="exportar">Exportar Excel</button><button class="btn sm primary" data-act="salvar">Salvar</button>`;
+  return topo(crumbs, dir) + `
+  <div class="tabs" role="tablist">${TABS.map(([k, t]) => `<button role="tab" aria-selected="${S.tab === k}" data-act="tab" data-tab="${k}">${t}</button>`).join("")}</div>
+  <main id="main">${conteudoAba()}</main>`;
+}
+function bannerConflito(){
+  if (!S.remotoPendente) return "";
+  const r = S.remotoPendente; const quem = r.atualizadoPor ? ` por ${esc(r.atualizadoPor)}` : "";
+  return `<div class="banner"><span>Esta QQP foi salva em outro computador${quem} enquanto você editava.</span>
+    <button class="btn sm" data-act="recarregarRemoto">Descartar minhas alterações e carregar a versão salva</button>
+    <button class="btn sm danger" data-act="sobrescrever">Salvar a minha versão por cima</button></div>`;
+}
+function conteudoAba(){
+  const avisoFormula = (() => { try { compilar(S.q.modelo.formula, chavesDe(S.q.modelo)); return ""; } catch (e){ return `<div class="banner">A fórmula do modelo desta QQP tem um problema: ${esc(e.message)}. Corrija em Dados da QQP.</div>`; } })();
+  const corpo = S.tab === "comp" ? abaComparativo() : S.tab === "quant" ? abaQuantitativos() : S.tab === "forn" ? abaFornecedores() : abaDados();
+  return bannerConflito() + avisoFormula + corpo;
+}
+function filtroFornecedores(){
+  const F = S.q.fornecedores; if (F.length < 2) return "";
+  const vis = F.length - F.filter(f => S.ocultos.has(f.id)).length;
+  return `<details class="filtro" id="filtroF"><summary>Fornecedores (${vis} de ${F.length})</summary><div class="painel">
+    ${F.map(f => `<label><input type="checkbox" data-filtro="${f.id}" ${S.ocultos.has(f.id) ? "" : "checked"}> ${esc(f.nome || "Sem nome")}</label>`).join("")}
+    <div class="acts"><button class="btn sm" data-act="filtroTodos">Mostrar todos</button></div></div></details>`;
+}
+
+/* ----- comparativo ----- */
+function abaComparativo(){
+  const q = S.q, F = fornVisiveis(q), R = calc(q), m = q.modelo;
+  if (!q.grupos.length || !q.fornecedores.length){
+    return `<div class="wrap"><div class="vazio"><h3>O comparativo aparece aqui</h3>
+      <p>Cadastre agrupadores, ${esc((m.nivel2Nome || "pavimentos").toLowerCase())} e insumos em Quantitativos, e os fornecedores com as linhas cotadas em Fornecedores e preços.</p>
+      <button class="btn primary" data-act="tab" data-tab="${q.grupos.length ? "forn" : "quant"}">${q.grupos.length ? "Cadastrar fornecedores" : "Cadastrar quantitativos"}</button></div></div>`;
+  }
+  return `<div class="bar"><div><h2>Comparativo</h2></div><div class="spacer"></div>
+      <button class="btn sm" data-act="expandir">Expandir tudo</button><button class="btn sm" data-act="recolher">Recolher ${esc((m.nivel2Nome || "nível 2").toLowerCase())}</button>${filtroFornecedores()}</div>`
+    + ranking(R, F) + `<div class="scroller" id="scComp"><table class="qqp">${cabecalhoComp(q, F)}<tbody>${corpoComp(q, R, F)}</tbody></table></div>`;
+}
+function ranking(R, F){
+  const lst = F.map(f => ({ f, ...R.final[f.id] })).sort((a, b) => (a.falta - b.falta) || (a.total - b.total));
+  if (!lst.length) return "";
+  const max = Math.max(R.orcCorr, ...lst.map(x => x.total), 1) * 1.04;
+  const melhor = lst.find(x => x.falta === 0 && x.total > 0);
+  return `<section class="ranking" aria-label="Resumo por fornecedor">
+    <div class="head"><h3>Proposta total por fornecedor</h3>
+      <span class="orc">${R.orcCorr ? `Orçamento corrigido ${brl(R.orcCorr)}${R.fator !== 1 ? ` (base ${brl(R.orc)} × INCC ${fat(R.fator)})` : ""}` : "Sem orçamento informado"}${R.inccFaltando ? ` <span style="color:var(--warn)">· mês de INCC sem índice na tabela</span>` : ""}</span></div>
+    ${lst.map(x => { const sav = R.orcCorr ? R.orcCorr - x.total : null;
+      return `<div class="rk ${melhor && x.f.id === melhor.f.id ? "melhor" : ""}">
+        <div class="nome" title="${esc(x.f.nome)}">${esc(x.f.nome || "Sem nome")}${x.falta ? `<small>sem preço em ${x.falta} ${x.falta === 1 ? "item" : "itens"}</small>` : ""}${x.ajuste ? `<small style="color:var(--muted)">ajustes ${x.ajuste > 0 ? "+" : "−"}${brl(Math.abs(x.ajuste))}</small>` : ""}</div>
+        <div class="trilho"><div class="barra" style="width:${(Math.max(x.total, 0) / max * 100).toFixed(2)}%"></div>
+          ${R.orcCorr ? `<div class="marco" style="left:${(R.orcCorr / max * 100).toFixed(2)}%" title="Orçamento corrigido"></div>` : ""}</div>
+        <div class="v">${brl(x.total)}</div>
+        <div class="s ${x.falta || sav === null ? "" : sav >= 0 ? "pos" : "neg"}">${x.falta ? `<span style="color:var(--warn)">Proposta incompleta</span>` : sav === null ? "" : (sav >= 0 ? "Saving " : "Acima ") + brl0(Math.abs(sav))}</div></div>`; }).join("")}
+    <div class="legenda"><span><i style="background:var(--primary)"></i>Menor proposta completa, com ajustes</span>${R.orcCorr ? `<span><i style="background:var(--ink);width:2px"></i>Orçamento corrigido</span>` : ""}<span><i style="background:var(--best)"></i>Menor preço na linha da tabela</span><span>Linha em cinza: escolhida automaticamente pelo menor preço</span></div>
+  </section>`;
+}
+function fichaCurta(f){
+  return [f.prazoEntrega && `Entrega: ${f.prazoEntrega}`, f.condicaoPagamento && `Pagamento: ${f.condicaoPagamento}`, f.frete && `Frete ${f.frete}`].filter(Boolean).map(esc).join("<br>");
+}
+function cabecalhoComp(q, F){
+  const m = q.modelo, D = m.descritivas, C = m.campos;
+  return `<thead><tr>
+    <th class="c0" rowspan="2">${esc(m.usaNivel2 ? `${m.nivel2Nome} / ${rotuloInsumo(m).toLowerCase()}` : rotuloInsumo(m))}</th>
+    ${D.map(d => `<th rowspan="2">${esc(d.nome)}</th>`).join("")}${ehGranito(m) ? `<th rowspan="2">Tipo</th>` : ""}
+    ${C.map(c => `<th class="cq" rowspan="2">${esc(c.nome)}</th>`).join("")}<th class="cq" rowspan="2">Total</th><th class="cq" rowspan="2">Un.</th>
+    ${F.map(f => `<th class="forn bl" colspan="3">${esc(f.nome || "Sem nome")}${fichaCurta(f) ? `<span class="ficha">${fichaCurta(f)}</span>` : ""}</th>`).join("")}
+    <th class="forn bl" colspan="2">Orçamento</th></tr>
+    <tr>${F.map(() => `<th class="bl">Linha</th><th>Preço unit.</th><th>Preço total</th>`).join("")}<th class="bl">Base</th><th>Corrigido</th></tr></thead>`;
+}
+function celTotais(tot, F){
+  const mn = menorDe(tot, F);
+  return F.map(f => { const t = tot[f.id];
+    const best = mn !== null && t.falta === 0 && Math.abs(t.total - mn) < 0.005;
+    return `<td class="bl"></td><td></td><td class="n ${best ? "best" : ""} ${t.falta ? "falta" : ""}" title="${t.falta ? `Sem preço em ${t.falta} item(ns)` : ""}">${brl(t.total)}${t.falta ? " *" : ""}</td>`;
+  }).join("");
+}
+function selectEscolha(q, it, f, I, dataAttr){
+  const ops = ofertasDe(q, it.insumoId, f.id);
+  if (!ops.length) return "";
+  const x = I.por[f.id]; const sel = x.o ? x.o.id : "__none";
+  return `<select class="esc ${x.auto ? "auto" : ""}" ${dataAttr} data-f="${f.id}" aria-label="Linha de ${esc(f.nome)}">
+    ${ops.map(o => `<option value="${o.id}" ${o.id === sel ? "selected" : ""}>${esc(o.linha || "(sem nome)")}</option>`).join("")}
+    <option value="__none" ${sel === "__none" ? "selected" : ""}>Não considerar</option></select>`;
+}
+function embTexto(o, un, global){
+  if (global) return "valor global";
+  const c = num(o.contem) || 1;
+  if (!o.unidVenda && c === 1) return "";
+  return `${brl(num(o.preco))} / ${o.unidVenda || "unid."}${c !== 1 ? ` (${qtdF(c)} ${un})` : ""}`;
+}
+function corpoComp(q, R, F){
+  const m = q.modelo, C = m.campos, GR = ehGranito(m) ? 1 : 0;
+  const D = m.descritivas, DG = D.length + GR;
+  const vazias = n => "<td></td>".repeat(n);
+  const fixasDepois = DG + C.length + 2;
+  let h = "";
+  const linhaTotal = (rot, tot, cls, orc, orcC) => `<tr class="${cls}"><td class="c0">${rot}</td>${vazias(fixasDepois)}${celTotais(tot, F)}<td class="n bl">${orc ? brl(orc) : ""}</td><td class="n">${orcC ? brl(orcC) : ""}</td></tr>`;
+  h += linhaTotal("Total dos itens", R.total, "l0", R.orc, R.orcCorr);
+  if (F.some(f => R.final[f.id].ajuste)){
+    h += `<tr class="l0b"><td class="c0">Ajustes (frete, descontos e outros)</td>${vazias(fixasDepois)}${F.map(f => { const a = R.final[f.id].ajuste; return `<td class="bl"></td><td></td><td class="n">${a ? (a > 0 ? "+" : "−") + brl(Math.abs(a)) : "—"}</td>`; }).join("")}<td class="bl"></td><td></td></tr>`;
+    const finais = Object.fromEntries(F.map(f => [f.id, { total: R.final[f.id].total, falta: R.final[f.id].falta }]));
+    h += linhaTotal("Total com ajustes", finais, "l0", 0, 0);
+  }
+  for (const g of q.grupos){
+    const G = R.grupos[g.id], fg = S.fechados.has(g.id);
+    h += `<tr class="l1"><td class="c0"><button class="caret" data-act="toggle" data-id="${g.id}" aria-label="${fg ? "Expandir" : "Recolher"}">${fg ? "▶" : "▼"}</button> ${esc(g.nome || "Agrupador")}</td>
+      ${vazias(DG + C.length)}<td class="n cq">${G.qtd ? qtdF(G.qtd) : ""}</td><td></td>${celTotais(G.total, F)}
+      <td class="n bl">${G.orc ? brl(G.orc) : ""}</td><td class="n">${G.orc ? brl(G.orc * R.fator) : ""}</td></tr>`;
+    if (fg) continue;
+    for (const p of g.n2){
+      const P = R.n2[p.id], fp = S.fechados.has(p.id);
+      if (m.usaNivel2){
+        h += `<tr class="l2"><td class="c0"><button class="caret" data-act="toggle" data-id="${p.id}" aria-label="${fp ? "Expandir" : "Recolher"}">${fp ? "▶" : "▼"}</button> ${esc(p.nome || m.nivel2Nome)}</td>
+          ${vazias(DG)}${C.map(c => `<td class="n cq">${c.nivel === "n2" ? qtdF(num(p.valores[c.chave])) : ""}</td>`).join("")}
+          <td class="n cq">${P.qtd ? qtdF(P.qtd) : ""}</td><td></td>${celTotais(P.total, F)}<td class="n bl">${P.orc ? brl(P.orc) : ""}</td><td class="n">${P.orc ? brl(P.orc * R.fator) : ""}</td></tr>`;
+        if (fp) continue;
+      }
+      for (const it of p.itens){
+        const I = R.itens[it.id], ins = insumoDe(q, it.insumoId), un = unidadeInsumo(q, ins);
+        h += `<tr class="l3"><td class="c0" ${m.usaNivel2 ? "" : `style="padding-left:22px"`}>${esc(ins?.nome || "—")}${I.embalagensDiferentes ? `<span class="aviso" title="Fornecedores cotaram em embalagens diferentes. Os preços foram convertidos para ${esc(un)}; confira o conteúdo de cada embalagem.">⚠</span>` : ""}</td>
+          ${D.map(d => `<td class="desc-col" title="${esc(it.desc[d.id])}">${esc(it.desc[d.id])}</td>`).join("")}
+          ${GR ? `<td class="desc-col" title="${esc(I.partes?.tipo || "")}">${I.partes?.semTipo ? `<span style="color:var(--warn)">sem tipo</span>` : esc(I.partes?.tipo || "")}</td>` : ""}
+          ${it.global ? `${C.map(() => `<td></td>`).join("")}<td class="vg" colspan="2">valor global</td>`
+            : `${C.map(c => `<td class="n cq">${qtdF(num(I.vars[c.chave]))}</td>`).join("")}<td class="n cq" ${I.nPers ? `title="${esc(it.pers.map(x => `${x.onde || "?"}: ${num(x.qtd) > 0 ? "+" : ""}${qtdF(num(x.qtd))}${x.motivo ? " (" + x.motivo + ")" : ""}`).join("\n"))}"` : ""}><b>${qtdF(I.qtd)}</b>${I.nPers ? `<span class="emb">padrão ${qtdF(I.base)}, pers. ${I.persSoma > 0 ? "+" : I.persSoma < 0 ? "−" : ""}${qtdF(Math.abs(I.persSoma))}</span>` : ""}</td><td class="un">${esc(un)}</td>`}
+          ${F.map(f => { const x = I.por[f.id];
+            const sel = selectEscolha(q, it, f, I, `data-esc="${it.id}"`);
+            if (!x.o) return `<td class="bl">${sel}</td><td class="sem" colspan="2">${x.none ? "não considerado" : (I.qtd > 0 || it.global) ? "sem preço" : "—"}</td>`;
+            const best = I.min !== null && Math.abs(x.total - I.min) < 0.005;
+            const emb = embTexto(x.o, un, it.global);
+            const nEmb = !it.global && num(x.o.contem) > 1 ? Math.ceil(I.qtd / num(x.o.contem) - 1e-9) : null;
+            return `<td class="bl">${sel}</td>
+              <td class="n" title="${nEmb ? `Para o pedido: ${qtdF(nEmb)} ${esc(x.o.unidVenda || "unid.")}` : ""}">${brl(x.unit)}${emb ? `<span class="emb">${esc(emb)}</span>` : ""}</td>
+              <td class="n ${best ? "best" : ""}">${brl(x.total)}</td>`;
+          }).join("")}
+          <td class="n bl">${I.orc ? brl(I.orc) : ""}</td><td class="n">${I.orc ? brl(I.orc * R.fator) : ""}</td></tr>`;
+      }
+    }
+  }
+  // resumo por insumo (escolha aplicada a todas as linhas do insumo)
+  if (R.insumos.size){
+    h += `<tr class="sec"><td class="c0">Resumo por insumo</td><td colspan="${fixasDepois + F.length * 3 + 2}">Escolher a linha aqui aplica a mesma escolha em todas as linhas do insumo.</td></tr>`;
+    for (const ins of R.insumos.values()){
+      if (!ins.id) continue;
+      h += `<tr class="l3"><td class="c0" style="padding-left:12px">${esc(ins.nome)}</td>${vazias(DG + C.length)}${ins.itens.every(i => i.global) ? `<td class="vg" colspan="2">valor global</td>` : `<td class="n cq"><b>${qtdF(ins.qtd)}</b></td><td class="un">${esc(ins.un)}</td>`}
+        ${F.map(f => { const ops = ofertasDe(q, ins.id, f.id); const t = ins.total[f.id];
+          const es = ins.escolhidas[f.id]; const unica = es && es.size === 1 ? [...es][0] : null;
+          const explic = new Set(ins.itens.map(i => i.escolhas?.[f.id] || ""));
+          const sel = ops.length ? `<select class="esc" data-escins="${ins.id}" data-f="${f.id}" aria-label="Linha de ${esc(f.nome)} para ${esc(ins.nome)}">
+              <option value="" ${explic.size === 1 && explic.has("") ? "selected" : ""}>Menor preço (automático)</option>
+              ${ops.map(o => `<option value="${o.id}" ${explic.size === 1 && explic.has(o.id) ? "selected" : ""}>${esc(o.linha || "(sem nome)")}</option>`).join("")}
+              <option value="__none" ${explic.size === 1 && explic.has("__none") ? "selected" : ""}>Não considerar</option>
+              ${explic.size > 1 ? `<option selected disabled>(varia por linha)</option>` : ""}</select>` : "";
+          const o = unica ? q.ofertas.find(x => x.id === unica) : null;
+          const nEmb = o && num(o.contem) > 1 ? Math.ceil(ins.qtd / num(o.contem) - 1e-9) : null;
+          return `<td class="bl">${sel}</td><td class="n">${o ? brl(precoUn(o)) : ""}${nEmb ? `<span class="emb">${qtdF(nEmb)} ${esc(o.unidVenda || "unid.")} p/ pedido</span>` : ""}</td><td class="n ${t.falta ? "falta" : ""}">${brl(t.total)}${t.falta ? " *" : ""}</td>`;
+        }).join("")}<td class="bl"></td><td></td></tr>`;
+    }
+  }
+  return h;
+}
+
+/* ----- quantitativos ----- */
+function botaoPers(I, id){
+  if (!I) return "";
+  const n = I.nPers, sm = I.persSoma;
+  return `<button class="btn sm" data-act="pers" data-id="${id}" title="Personalizações de apartamentos" style="${n ? "border-color:var(--warn);color:var(--warn)" : "color:var(--muted)"}">${n ? `${sm > 0 ? "+" : sm < 0 ? "−" : ""}${qtdF(Math.abs(sm))} (${n})` : "+"}</button>`;
+}
+function celQtdItem(I){
+  if (!I) return "";
+  const p = I.partes;
+  const padrao = I.nPers ? `<span class="emb">padrão ${qtdF(I.base)}</span>` : "";
+  if (!p) return `<b>${qtdF(I.qtd)}</b>${padrao}`;
+  if (p.semTipo) return `<b>${qtdF(I.qtd)}</b><span class="emb" style="color:var(--warn)">escolha o tipo</span>`;
+  return `<b>${qtdF(I.qtd)}</b>${padrao}<span class="emb" title="Por peça: tampo ${qtdF(p.tampo)} + testeira ${qtdF(p.testeira)} + respaldo ${qtdF(p.respaldo)} m²">${qtdF(p.tampo)} + ${qtdF(p.testeira)} + ${qtdF(p.respaldo)} m²</span>`;
+}
+function abaQuantitativos(){
+  const q = S.q, m = q.modelo, R = calc(q);
+  const D = m.descritivas, C = m.campos, Cn2 = C.filter(c => c.nivel === "n2"), GR = ehGranito(m) ? 1 : 0;
+  const nCols = 1 + D.length + GR + C.length + 4;
+  let h = "";
+  q.grupos.forEach((g, gi) => {
+    const fg = S.fechados.has(g.id);
+    h += `<tr class="l1"><td class="c0" colspan="${1 + D.length + GR + C.length}"><div class="grp-flex">
+        <button class="caret" data-act="toggle" data-id="${g.id}" aria-label="${fg ? "Expandir" : "Recolher"}">${fg ? "▶" : "▼"}</button>
+        <input class="in" style="flex:1;min-width:180px" data-bind="grupos.${gi}.nome" value="${esc(g.nome)}" placeholder="Agrupador (ex.: Torre, Smart, Garden)"></div></td>
+      <td class="n cq" data-qtdg="${g.id}">${qtdF(R.grupos[g.id].qtd)}</td><td></td><td></td>
+      <td><div class="grp-flex"><label for="go${gi}">Orçamento do agrupador</label><input id="go${gi}" class="in din" data-bind="grupos.${gi}.orcamento" data-tipo="num" inputmode="decimal" value="${esc(inVal(g.orcamento))}" placeholder="0,00"></div></td>
+      <td class="acoes"><button class="icon" data-act="mov" data-nivel="g" data-g="${gi}" data-d="-1" title="Subir" aria-label="Subir">▲</button><button class="icon" data-act="mov" data-nivel="g" data-g="${gi}" data-d="1" title="Descer" aria-label="Descer">▼</button><button class="icon del" data-act="del" data-nivel="g" data-g="${gi}" title="Excluir agrupador" aria-label="Excluir agrupador">✕</button></td></tr>`;
+    if (fg) return;
+    g.n2.forEach((p, pi) => {
+      const fp = S.fechados.has(p.id);
+      if (m.usaNivel2){
+        h += `<tr class="l2"><td class="c0"><div class="grp-flex"><button class="caret" data-act="toggle" data-id="${p.id}" aria-label="${fp ? "Expandir" : "Recolher"}">${fp ? "▶" : "▼"}</button>
+            <input class="in" data-bind="grupos.${gi}.n2.${pi}.nome" value="${esc(p.nome)}" placeholder="${esc(m.nivel2Nome)} (ex.: PAV TIPO 1 AO 8)"></div></td>
+          ${D.map(() => "<td></td>").join("")}${GR ? "<td></td>" : ""}
+          ${C.map(c => c.nivel === "n2" ? `<td><input class="in num" data-bind="grupos.${gi}.n2.${pi}.valores.${c.chave}" data-tipo="num" inputmode="decimal" value="${esc(inVal(p.valores[c.chave]))}" aria-label="${esc(c.nome)}"></td>` : "<td></td>").join("")}
+          <td class="n cq" data-qtdn="${p.id}">${qtdF(R.n2[p.id].qtd)}</td><td></td><td></td><td></td>
+          <td class="acoes"><button class="icon" data-act="dupN2" data-g="${gi}" data-p="${pi}" title="Duplicar" aria-label="Duplicar">⧉</button><button class="icon" data-act="mov" data-nivel="p" data-g="${gi}" data-p="${pi}" data-d="-1" title="Subir" aria-label="Subir">▲</button><button class="icon" data-act="mov" data-nivel="p" data-g="${gi}" data-p="${pi}" data-d="1" title="Descer" aria-label="Descer">▼</button><button class="icon del" data-act="del" data-nivel="p" data-g="${gi}" data-p="${pi}" title="Excluir" aria-label="Excluir">✕</button></td></tr>`;
+        if (fp) return;
+      }
+      p.itens.forEach((it, ii) => {
+        const base = `grupos.${gi}.n2.${pi}.itens.${ii}`;
+        const ins = insumoDe(q, it.insumoId);
+        h += `<tr class="l3"><td class="c0" ${m.usaNivel2 ? "" : `style="padding-left:22px"`}><input class="in" list="dlInsumos" data-insumo="${gi}.${pi}.${ii}" value="${esc(ins?.nome || "")}" placeholder="Insumo (ex.: BACIA COM CAIXA ACOPLADA)" aria-label="Insumo"></td>
+          ${D.map(d => `<td><input class="in desc" data-bind="${base}.desc.${d.id}" value="${esc(it.desc[d.id])}" aria-label="${esc(d.nome)}"></td>`).join("")}
+          ${GR ? `<td><select class="in ${it.tipoBancada ? "" : "vazio-sel"}" data-bind="${base}.tipoBancada" aria-label="Tipo de bancada"><option value="">—</option>${(m.tiposBancada || []).map(t => `<option value="${t.id}" ${t.id === it.tipoBancada ? "selected" : ""}>${esc(t.nome)}</option>`).join("")}</select></td>` : ""}
+          ${C.map(c => {
+            if (it.global) return `<td class="herd">—</td>`;
+            if (c.nivel === "n2") return `<td class="herd" data-herd="${p.id}|${c.chave}">${qtdF(num(p.valores[c.chave]))}</td>`;
+            const herd = p.valores[c.chave];
+            return `<td><input class="in num" data-bind="${base}.valores.${c.chave}" data-herdph="${p.id}|${c.chave}" data-tipo="num" inputmode="decimal" value="${esc(inVal(it.valores[c.chave]))}" ${herd != null && herd !== "" ? `placeholder="${esc(inVal(herd))}"` : ""} aria-label="${esc(c.nome)}"></td>`;
+          }).join("")}
+          <td class="n cq" data-qtdi="${it.id}">${it.global ? `<span style="color:var(--muted)">VG</span>` : celQtdItem(R.itens[it.id])}</td>
+          <td class="cq">${it.global ? "" : botaoPers(R.itens[it.id], it.id)}</td>
+          <td class="un">${esc(unidadeInsumo(q, ins))}</td>
+          <td><div class="grp-flex"><select class="in" style="min-width:0;width:auto" data-bind="${base}.orcModo" aria-label="Tipo de orçamento">
+              <option value="total" ${it.orcModo !== "unit" ? "selected" : ""}>R$ total</option><option value="unit" ${it.orcModo === "unit" ? "selected" : ""}>R$ / ${esc(unidadeInsumo(q, ins))}</option></select>
+            <input class="in din" data-bind="${base}.orcValor" data-tipo="num" inputmode="decimal" value="${esc(inVal(it.orcValor))}" placeholder="orçamento" aria-label="Orçamento do insumo"></div></td>
+          <td class="acoes"><label title="Cotado por valor global (fornecedor informa o total)" style="font-size:12px;color:var(--muted);margin-right:4px;cursor:pointer"><input type="checkbox" data-global="${gi}.${pi}.${ii}" ${it.global ? "checked" : ""}> VG</label><button class="icon" data-act="mov" data-nivel="i" data-g="${gi}" data-p="${pi}" data-i="${ii}" data-d="-1" title="Subir" aria-label="Subir">▲</button><button class="icon" data-act="mov" data-nivel="i" data-g="${gi}" data-p="${pi}" data-i="${ii}" data-d="1" title="Descer" aria-label="Descer">▼</button><button class="icon del" data-act="del" data-nivel="i" data-g="${gi}" data-p="${pi}" data-i="${ii}" title="Excluir insumo" aria-label="Excluir insumo">✕</button></td></tr>`;
+      });
+      h += `<tr class="addrow"><td class="c0" style="padding-left:${m.usaNivel2 ? 42 : 22}px"><button class="btn sm" data-act="addItem" data-g="${gi}" data-p="${pi}">+ Insumo</button></td><td colspan="${nCols}"></td></tr>`;
+    });
+    if (m.usaNivel2) h += `<tr class="addrow"><td class="c0" style="padding-left:22px"><button class="btn sm" data-act="addN2" data-g="${gi}">+ ${esc(m.nivel2Nome)}</button></td><td colspan="${nCols}"></td></tr>`;
+  });
+  return `<div class="bar"><div><h2>Quantitativos</h2></div><div class="spacer"></div>
+      ${m.usaNivel2 ? `<button class="btn sm" data-act="expandir">Expandir tudo</button><button class="btn sm" data-act="recolher">Recolher ${esc(m.nivel2Nome.toLowerCase())}</button>` : ""}
+      <button class="btn primary" data-act="addGrupo">+ Agrupador</button></div>
+    <p class="lead">Total = ${esc(formulaLegivel(m))}. ${Cn2.length ? `Colunas do ${esc(m.nivel2Nome.toLowerCase())} valem para todos os insumos dele.` : ""} O insumo é o mesmo em todas as linhas com o mesmo nome; as linhas cotadas ficam em Fornecedores e preços.</p>
+    <datalist id="dlInsumos">${q.insumos.map(i => `<option value="${esc(i.nome)}">`).join("")}</datalist>
+    ${q.grupos.length ? `<div class="scroller" id="scQuant"><table class="qqp"><thead><tr>
+        <th class="c0">${esc(m.usaNivel2 ? `Agrupador / ${m.nivel2Nome.toLowerCase()} / ${rotuloInsumo(m).toLowerCase()}` : `Agrupador / ${rotuloInsumo(m).toLowerCase()}`)}</th>
+        ${D.map(d => `<th>${esc(d.nome)}</th>`).join("")}${GR ? `<th>Tipo de bancada</th>` : ""}
+        ${C.map(c => `<th class="cq">${esc(c.nome)}${c.unidade ? ` (${esc(c.unidade)})` : ""}</th>`).join("")}
+        <th class="cq">Total</th><th class="cq" title="Personalizações de apartamentos (+ ou −)">Personal.</th><th class="cq">Un.</th><th>Orçamento</th><th class="acoes"></th></tr></thead>
+      <tbody>${h}</tbody></table></div>` :
+      `<div class="vazio"><h3>Comece pelo agrupador</h3><p>O agrupador é o primeiro nível (Torre, Smart, Garden).${m.usaNivel2 ? ` Dentro dele entram ${esc(m.nivel2Nome.toLowerCase())} e, dentro de cada um, os insumos.` : " Dentro dele entram os insumos."}</p><button class="btn primary" data-act="addGrupo">+ Agrupador</button></div>`}`;
+}
+
+/* ----- fornecedores e preços ----- */
+function abaFornecedores(){
+  const q = S.q, F = q.fornecedores, FV = fornVisiveis(q), R = calc(q);
+  const boxes = F.map((f, fi) => S.ocultos.has(f.id) ? "" : `
+    <div class="forn-box">
+      <div class="cab"><input data-bind="fornecedores.${fi}.nome" value="${esc(f.nome)}" placeholder="Nome do fornecedor" aria-label="Nome do fornecedor">
+        <button class="icon" data-act="movF" data-f="${fi}" data-d="-1" title="Mover coluna para a esquerda" aria-label="Mover para a esquerda">◀</button>
+        <button class="icon" data-act="movF" data-f="${fi}" data-d="1" title="Mover coluna para a direita" aria-label="Mover para a direita">▶</button>
+        <button class="icon del" data-act="delF" data-f="${fi}" title="Excluir fornecedor" aria-label="Excluir fornecedor">✕</button></div>
+      <div class="grid2">
+        <div class="mini"><label>Prazo de entrega</label><input data-bind="fornecedores.${fi}.prazoEntrega" value="${esc(f.prazoEntrega)}" placeholder="Ex.: 15 dias após pedido"></div>
+        <div class="mini"><label>Condição de pagamento</label><input data-bind="fornecedores.${fi}.condicaoPagamento" value="${esc(f.condicaoPagamento)}" placeholder="Ex.: 30% + 3x"></div>
+        <div class="mini"><label>Frete</label><select data-bind="fornecedores.${fi}.frete"><option value="">—</option>${["CIF", "FOB"].map(x => `<option ${f.frete === x ? "selected" : ""}>${x}</option>`).join("")}</select></div>
+        <div class="mini"><label>Validade da proposta</label><input type="date" data-bind="fornecedores.${fi}.validade" value="${esc(f.validade)}"></div>
+        <div class="mini"><label>Contato</label><input data-bind="fornecedores.${fi}.contato" value="${esc(f.contato)}" placeholder="Nome do vendedor"></div>
+        <div class="mini"><label>Telefone</label><input data-bind="fornecedores.${fi}.telefone" value="${esc(f.telefone)}"></div>
+        <div class="mini full"><label>E-mail</label><input type="email" data-bind="fornecedores.${fi}.email" value="${esc(f.email)}"></div>
+        <div class="mini full"><label>Observações</label><input data-bind="fornecedores.${fi}.obs" value="${esc(f.obs)}" placeholder="O que está ou não incluso, impostos, etc."></div>
+      </div>
+      <h4>Ajustes no total da proposta</h4>
+      <div class="grid2">
+        <div class="mini"><label>Frete (R$)</label><input data-bind="fornecedores.${fi}.ajustes.frete" data-tipo="num" inputmode="decimal" value="${esc(inVal(f.ajustes.frete))}" placeholder="0,00"></div>
+        <div class="mini"><label>Desconto (%)</label><input data-bind="fornecedores.${fi}.ajustes.descontoPct" data-tipo="num" inputmode="decimal" value="${esc(inVal(f.ajustes.descontoPct))}" placeholder="0"></div>
+        <div class="mini"><label>Desconto (R$)</label><input data-bind="fornecedores.${fi}.ajustes.descontoValor" data-tipo="num" inputmode="decimal" value="${esc(inVal(f.ajustes.descontoValor))}" placeholder="0,00"></div>
+      </div>
+      ${f.ajustes.outros.map((x, xi) => `<div class="grid2" style="grid-template-columns:1fr 120px 30px;margin-bottom:4px">
+        <div class="mini"><input data-bind="fornecedores.${fi}.ajustes.outros.${xi}.desc" value="${esc(x.desc)}" placeholder="Descrição (ex.: instalação)" aria-label="Descrição do ajuste"></div>
+        <div class="mini"><input data-bind="fornecedores.${fi}.ajustes.outros.${xi}.valor" data-tipo="num" inputmode="decimal" value="${esc(inVal(x.valor))}" placeholder="+ ou − R$" aria-label="Valor do ajuste"></div>
+        <button class="icon del" data-act="delAj" data-f="${fi}" data-i="${xi}" aria-label="Excluir ajuste">✕</button></div>`).join("")}
+      <div class="rodape"><button class="btn sm" data-act="addAj" data-f="${fi}">+ Outro ajuste</button></div>
+      <div class="ajuste-total">Itens ${brl(R.final[f.id].base)} · ajustes ${R.final[f.id].ajuste >= 0 ? "+" : "−"}${brl(Math.abs(R.final[f.id].ajuste))} · <b>total ${brl(R.final[f.id].total)}</b></div>
+    </div>`).join("");
+
+  const usados = new Set(todosItens(q).map(i => i.insumoId));
+  const blocos = q.insumos.map((ins, ki) => {
+    const un = unidadeInsumo(q, ins);
+    const linhas = [];
+    FV.forEach(f => q.ofertas.forEach((o, oi) => { if (o.insumoId === ins.id && o.fornId === f.id) linhas.push({ o, oi, f }); }));
+    const qtd = R.insumos.get(ins.id)?.qtd || 0;
+    let ultimoF = null;
+    return `<div class="insumo-bloco">
+      <div class="cab"><input class="nome" data-bind="insumos.${ki}.nome" value="${esc(ins.nome)}" aria-label="Nome do insumo">
+        <span class="info">Unidade <input class="un" data-bind="insumos.${ki}.unidade" value="${esc(ins.unidade || "")}" placeholder="${esc(q.modelo.unidade || "un")}" aria-label="Unidade do insumo"></span>
+        <span class="info">Qtd total <b>${qtdF(qtd)} ${esc(un)}</b></span>
+        ${usados.has(ins.id) ? "" : `<span class="info" style="color:var(--warn)">sem uso nos quantitativos</span><button class="icon del" data-act="delIns" data-k="${ki}" aria-label="Excluir insumo">✕</button>`}</div>
+      ${linhas.length ? `<table class="ofertas"><thead><tr><th style="width:150px">Fornecedor</th><th>Linha / produto</th><th class="r" style="width:120px">Preço cotado (R$)</th><th style="width:150px">Unidade de venda</th><th class="r" style="width:110px">Contém (${esc(un)})</th><th class="r" style="width:130px">Preço por ${esc(un)}</th><th style="width:34px"></th></tr></thead><tbody>
+        ${linhas.map(({ o, oi, f }) => { const novoF = f.id !== ultimoF; ultimoF = f.id;
+          return `<tr class="${novoF ? "sep" : ""}"><td class="forn-nome">${novoF ? esc(f.nome || "Sem nome") : ""}</td>
+            <td><input data-bind="ofertas.${oi}.linha" value="${esc(o.linha)}" placeholder="Ex.: ROCA - VASO ZIP PLUS" aria-label="Linha"></td>
+            <td><input class="r" data-bind="ofertas.${oi}.preco" data-tipo="num" inputmode="decimal" value="${esc(inVal(o.preco))}" placeholder="0,00" aria-label="Preço cotado"></td>
+            <td><input list="dlEmb" data-bind="ofertas.${oi}.unidVenda" data-emb="${oi}" value="${esc(o.unidVenda)}" placeholder="${esc(un)}" aria-label="Unidade de venda"></td>
+            <td><input class="r" data-bind="ofertas.${oi}.contem" data-tipo="num" inputmode="decimal" value="${esc(inVal(o.contem))}" placeholder="1" aria-label="Conteúdo da unidade de venda"></td>
+            <td class="calc" data-pu="${oi}">${brl(precoUn(o))}${num(o.contem) > 1 ? `<small>${qtdF(Math.ceil(qtd / num(o.contem) - 1e-9))} ${esc(o.unidVenda || "unid.")} p/ pedido</small>` : ""}</td>
+            <td><button class="icon del" data-act="delOf" data-o="${oi}" aria-label="Excluir linha cotada">✕</button></td></tr>`; }).join("")}
+      </tbody></table>` : ""}
+      <div class="rodape">${FV.length ? `<select id="addOfF${ki}" aria-label="Fornecedor da nova linha">${FV.map(f => `<option value="${f.id}">${esc(f.nome || "Sem nome")}</option>`).join("")}</select>
+        <button class="btn sm" data-act="addOf" data-k="${ki}">+ Linha cotada</button>` : `<span style="color:var(--muted);font-size:14px">Cadastre um fornecedor para lançar preços.</span>`}</div>
+    </div>`;
+  }).join("");
+
+  return `<div class="wrap" style="max-width:1400px">
+    <div class="bar"><div><h2>Fornecedores e preços</h2></div><div class="spacer"></div>${filtroFornecedores()}<button class="btn primary" data-act="addF">+ Fornecedor</button></div>
+    <p class="lead">A ordem dos fornecedores aqui é a ordem das colunas no comparativo. Prazo e pagamento aparecem no cabeçalho de cada fornecedor no comparativo.</p>
+    ${F.length ? `<div class="forns">${boxes}</div>` : `<div class="vazio" style="margin-bottom:24px"><h3>Nenhum fornecedor ainda</h3><p>Adicione os fornecedores participantes da concorrência.</p><button class="btn primary" data-act="addF">+ Fornecedor</button></div>`}
+    <div class="bar"><h2 style="margin:0">Preços por insumo</h2><div class="spacer"></div><button class="btn" data-act="colarOfertas">Colar do Excel</button></div>
+    <p class="lead">Cada fornecedor pode ter várias linhas para o mesmo insumo; a escolha é feita no comparativo. Informe o preço como está na proposta e quanto a unidade de venda contém (ex.: saco 28 kg contém 28), que o sistema converte para a unidade do insumo.</p>
+    <datalist id="dlEmb">${S.embalagens.map(e => `<option value="${esc(e.nome)}">${esc(e.nome)} (contém ${qtdF(e.contem)})</option>`).join("")}</datalist>
+    ${q.insumos.length ? blocos : `<div class="vazio"><h3>Nenhum insumo ainda</h3><p>Os insumos são criados ao preencher a coluna de insumo em Quantitativos.</p><button class="btn" data-act="tab" data-tab="quant">Ir para Quantitativos</button></div>`}
+  </div>`;
+}
+
+/* ----- dados da QQP ----- */
+function abaDados(){
+  const q = S.q, m = q.modelo, R = calc(q), i = q.incc;
+  const meses = S.incc.map(x => x.mes);
+  const sel = (campoMes, campoMan, rot) => `<div class="field"><label>${rot}</label>
+    <select data-bind="incc.${campoMes}">${`<option value="">Informar manualmente</option>`}${meses.map(mm => `<option value="${mm}" ${i[campoMes] === mm ? "selected" : ""}>${mesBR(mm)} (${inVal(inccValor(mm))})</option>`).join("")}</select>
+    ${i[campoMes] ? "" : `<input style="margin-top:6px" data-bind="incc.${campoMan}" data-tipo="num" inputmode="decimal" value="${esc(inVal(i[campoMan]))}" placeholder="Índice">`}</div>`;
+  return `<div class="wrap" style="max-width:900px">
+    <h2>Dados da QQP</h2><p class="lead">Identificação, correção do orçamento e o modelo de quantitativos usado.</p>
+    <div class="form-grid">
+      <div class="field"><label for="dPac">Carteira de insumo</label><input id="dPac" data-bind="pacote" value="${esc(q.pacote)}"></div>
+      <div class="field"><label for="dRev">Revisão</label><input id="dRev" data-bind="revisao" value="${esc(q.revisao)}" placeholder="R00"></div>
+      <div class="field"><label for="dData">Data</label><input id="dData" type="date" data-bind="data" value="${esc(q.data)}"></div>
+    </div>
+    <h3 style="margin-bottom:8px">Correção do orçamento pelo INCC</h3>
+    <div class="form-grid">
+      ${sel("mesBase", "base", "Mês do orçamento (base)")}${sel("mesAtual", "atual", "Mês atual (T−1)")}
+      <div class="field"><label>Fator de correção</label><div class="fator" id="fator">${fat(R.fator)}</div></div>
+      ${!meses.length ? `<div class="field full" style="color:var(--muted);font-size:14px">A tabela de INCC está vazia. Cadastre os índices em INCC, no menu superior, ou informe os valores manualmente.</div>` : ""}
+    </div>
+    <h3 style="margin-bottom:8px">Modelo de quantitativos: ${esc(m.nome || q.pacote)}</h3>
+    <div class="form-grid" style="display:block">
+      <p style="margin:0 0 6px">Total = <b>${esc(formulaLegivel(m))}</b></p>
+      <p style="margin:0;color:var(--muted);font-size:14px">Esta QQP guarda a própria cópia do modelo. Mudanças feitas depois no cadastro de modelos não a alteram.</p>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn sm" data-act="trazerModelo">Atualizar com o modelo cadastrado</button>
+        ${m.usaNivel2 ? `<button class="btn sm" data-act="salvarComoEstrutura">Salvar ${esc(m.nivel2Nome.toLowerCase())} como estrutura da obra</button>` : ""}
+      </div>
+    </div>
+    <div class="form-grid"><div class="field full"><label for="dObs">Observações</label><textarea id="dObs" data-bind="observacoes" placeholder="Premissas, escopo, o que está incluso no preço…">${esc(q.observacoes)}</textarea></div></div>
+  </div>`;
+}
+
+/* ---------------- render ---------------- */
+// a 2ª linha do cabeçalho fixo fica logo abaixo da 1ª, qualquer que seja a altura dela
+function ajustarCabecalhos(){
+  document.querySelectorAll("table.qqp thead").forEach(th => { if (th.rows.length < 2) return; const h = th.rows[0].getBoundingClientRect().height; for (const c of th.rows[1].cells) c.style.top = h + "px"; });
+}
+function guardarScroll(){ const sc = {}; document.querySelectorAll(".scroller[id]").forEach(e => sc[e.id] = [e.scrollLeft, e.scrollTop]); return sc; }
+function restaurarScroll(sc){ Object.entries(sc).forEach(([id, [l, t]]) => { const e = document.getElementById(id); if (e){ e.scrollLeft = l; e.scrollTop = t; } }); }
+function render(){
+  const sc = guardarScroll(), y = window.scrollY;
+  if (!S.user || S.view === "login") return telaLogin();
+  if (S.view === "carregando") app.innerHTML = `<div class="carregando">Carregando…</div>`;
+  else if (S.view === "erro") app.innerHTML = topo() + `<main><div class="wrap"><div class="banner">Não foi possível carregar os dados: ${esc(S.erro)}. Confira se as regras do Firestore foram publicadas com as coleções obras, modelos, config e qqps.</div></div></main>`;
+  else if (S.view === "obras") app.innerHTML = telaObras();
+  else if (S.view === "obra") app.innerHTML = telaObra();
+  else if (S.view === "modelos") app.innerHTML = telaModelos();
+  else if (S.view === "modelo") app.innerHTML = telaModelo();
+  else if (S.view === "incc") app.innerHTML = telaIncc();
+  else if (S.view === "qqp"){ app.innerHTML = telaQQP(); atualizarStatus(); }
+  restaurarScroll(sc); window.scrollTo(0, y); ajustarCabecalhos();
+}
+function renderAba(){
+  if (S.view !== "qqp") return render();
+  const sc = guardarScroll(); const aberto = document.getElementById("filtroF")?.open;
+  const main = document.getElementById("main"); if (!main) return render();
+  main.innerHTML = conteudoAba(); restaurarScroll(sc); ajustarCabecalhos();
+  if (aberto){ const d = document.getElementById("filtroF"); if (d) d.open = true; }
+}
+function atualizarCalculos(){
+  const R = calc(S.q);
+  document.querySelectorAll("[data-qtdi]").forEach(e => { const I = R.itens[e.dataset.qtdi]; const it = todosItens(S.q).find(x => x.id === e.dataset.qtdi); if (I && !it?.global) e.innerHTML = celQtdItem(I); });
+  document.querySelectorAll("[data-qtdg]").forEach(e => { const G = R.grupos[e.dataset.qtdg]; if (G) e.textContent = qtdF(G.qtd); });
+  document.querySelectorAll("[data-qtdn]").forEach(e => { const P = R.n2[e.dataset.qtdn]; if (P) e.textContent = qtdF(P.qtd); });
+  document.querySelectorAll("[data-pu]").forEach(e => { const o = S.q.ofertas[+e.dataset.pu]; if (o){ const ins = R.insumos.get(o.insumoId); e.innerHTML = brl(precoUn(o)) + (num(o.contem) > 1 ? `<small>${qtdF(Math.ceil((ins?.qtd || 0) / num(o.contem) - 1e-9))} ${esc(o.unidVenda || "unid.")} p/ pedido</small>` : ""); } });
+  document.querySelectorAll("[data-herd]").forEach(e => { const [pid, k] = e.dataset.herd.split("|"); const p = S.q.grupos.flatMap(g => g.n2).find(x => x.id === pid); if (p) e.textContent = qtdF(num(p.valores[k])); });
+  document.querySelectorAll("[data-herdph]").forEach(e => { const [pid, k] = e.dataset.herdph.split("|"); const p = S.q.grupos.flatMap(g => g.n2).find(x => x.id === pid); const v = p?.valores[k]; e.placeholder = v != null && v !== "" ? inVal(v) : ""; });
+  const f = document.getElementById("fator"); if (f) f.textContent = fat(R.fator);
+}
+function haAlteracoes(){ return (S.view === "qqp" && S.dirty) || (S.view === "modelo" && S.modeloDirty) || (S.view === "incc" && S.inccDirty) || (S.view === "obra" && S.obraDirty); }
+function podeSair(){ return !haAlteracoes() || confirm("Há alterações não salvas. Sair mesmo assim?"); }
+window.addEventListener("beforeunload", e => { if (haAlteracoes()){ e.preventDefault(); e.returnValue = ""; } });
+document.addEventListener("keydown", e => {
+  if (!((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s")) return;
+  const acao = { qqp: "salvar", modelo: "salvarModelo", incc: "salvarIncc", obra: S.obraTab === "estrutura" ? "salvarEstrutura" : null }[S.view];
+  if (!acao) return; e.preventDefault(); document.activeElement?.blur?.(); executar(acao, {});
+});
+
+/* ---------------- navegação ---------------- */
+async function irPara(view){
+  if (S.view === "qqp"){ if (!(await sairDaQQP(view))) return; return; }
+  if (!podeSair()) return;
+  S.modeloDirty = false; S.inccDirty = false; S.obraDirty = false;
+  if (view === "incc"){ S.inccEdit = clone(S.incc); }
+  S.view = view; render();
+}
+async function abrirObra(id){
+  S.obraId = id; S.obraTab = "qqps"; S.obraDirty = false;
+  const o = obraAtual();
+  S.obraEdit = clone(o.estrutura || { grupos: [] }); S.obraEdit.grupos ??= [];
+  S.obraEdit.grupos.forEach(g => { g.id ??= uid(); g.n2 ??= []; g.n2.forEach(p => { p.id ??= uid(); p.valores ??= {}; }); });
+  S.view = "obra"; S.qqpsCarregando = true; S.qqps = []; render();
+  try { await carregarQQPsDaObra(); } catch (ex){ alert("Não foi possível carregar as QQPs: " + ex.message); }
+  S.qqpsCarregando = false; if (S.view === "obra") render();
+}
+
+/* ---------------- eventos ---------------- */
+app.addEventListener("input", e => {
+  const t = e.target, d = t.dataset;
+  if (d.bind && S.q){ setPath(S.q, d.bind, d.tipo === "num" ? parseIn(t.value) : t.value); marcarAlterado(); atualizarCalculos(); return; }
+  if (d.obind && S.obraEdit){ setPath(S.obraEdit, d.obind, d.tipo === "num" ? parseIn(t.value) : t.value); S.obraDirty = true; return; }
+  if (d.mbind && S.modeloEdit){
+    setPath(S.modeloEdit, d.mbind, d.tipo === "num" ? parseIn(t.value) : t.value); S.modeloDirty = true;
+    const mc = /^campos\.(\d+)\.nome$/.exec(d.mbind);
+    if (mc){ const c = S.modeloEdit.campos[+mc[1]]; if (c._novo){ c.chave = chaveUnica(slug(t.value), S.modeloEdit.campos, c); const cd = t.closest("tr")?.querySelector("code"); if (cd) cd.textContent = c.chave; } atualizarChips(); }
+    if (d.mbind === "formula") S.caret = t.selectionStart;
+    const mt = /^tiposBancada\.(\d+)\./.exec(d.mbind);
+    if (mt){ const tb = S.modeloEdit.tiposBancada[+mt[1]]; const cel = document.querySelector(`[data-ex="${mt[1]}"]`);
+      if (cel) cel.textContent = qtdF((127 * 50 + (num(tb.rC) * 127 + num(tb.rL) * 50) * 14 + (num(tb.tC) * 127 + num(tb.tL) * 50) * 5) / 1e4) + " m²"; }
+    atualizarFormula(); return;
+  }
+  if (d.previa !== undefined){ S.previa[d.previa] = parseIn(t.value); atualizarFormula(); return; }
+  if (d.ibind && S.inccEdit){ const [i, k] = d.ibind.split("."); S.inccEdit[+i][k] = d.tipo === "num" ? parseIn(t.value) : t.value; S.inccDirty = true; return; }
+});
+app.addEventListener("keyup", e => { if (e.target.id === "mFormula") S.caret = e.target.selectionStart; });
+app.addEventListener("click", e => { if (e.target.id === "mFormula") S.caret = e.target.selectionStart; });
+app.addEventListener("change", e => {
+  const t = e.target, d = t.dataset;
+  if (S.view === "qqp" && S.q){
+    const q = S.q;
+    if (d.bind && t.tagName === "SELECT"){ renderAba(); return; }
+    if (d.emb !== undefined){
+      const o = q.ofertas[+d.emb]; const e2 = S.embalagens.find(x => chave(x.nome) === chave(t.value));
+      if (e2 && (!num(o.contem) || num(o.contem) === 1)){
+        o.contem = e2.contem; marcarAlterado();
+        const c = document.querySelector(`[data-bind="ofertas.${d.emb}.contem"]`); if (c) c.value = inVal(e2.contem);
+        atualizarCalculos();
+      }
+      return;
+    }
+    if (d.insumo){
+      // atualização pontual (sem redesenhar) para não perder o clique seguinte
+      const [gi, pi, ii] = d.insumo.split(".").map(Number);
+      const it = q.grupos[gi].n2[pi].itens[ii]; const nome = t.value.trim();
+      let ins = null;
+      if (!nome) it.insumoId = null;
+      else { ins = q.insumos.find(x => chave(x.nome) === chave(nome)); if (!ins){ ins = { id: uid(), nome, unidade: "" }; q.insumos.push(ins); const dl = document.getElementById("dlInsumos"); if (dl){ const op = document.createElement("option"); op.value = nome; dl.appendChild(op); } } it.insumoId = ins.id; }
+      const un = t.closest("tr")?.querySelector("td.un"); if (un) un.textContent = unidadeInsumo(q, ins);
+      marcarAlterado(); return;
+    }
+    if (d.global){ const [gi, pi, ii] = d.global.split(".").map(Number); q.grupos[gi].n2[pi].itens[ii].global = t.checked; marcarAlterado(); renderAba(); return; }
+    if (d.esc){ const it = todosItens(q).find(x => x.id === d.esc); if (it){ it.escolhas[d.f] = t.value; marcarAlterado(); renderAba(); } return; }
+    if (d.escins !== undefined){
+      todosItens(q).filter(x => x.insumoId === d.escins).forEach(it => { if (t.value) it.escolhas[d.f] = t.value; else delete it.escolhas[d.f]; });
+      marcarAlterado(); renderAba(); return;
+    }
+    if (d.filtro){ t.checked ? S.ocultos.delete(d.filtro) : S.ocultos.add(d.filtro); renderAba(); return; }
+  }
+  if (S.view === "modelo"){
+    if (d.mesp){
+      const m = S.modeloEdit;
+      if (t.value === "granito"){
+        m.especial = "granito";
+        if (!m.campos.some(c => c.chave === "repeticoes")) m.campos.unshift(campo("Repetições", "item", "", "repeticoes"));
+        for (const [k, nome] of Object.entries(CHAVES_GRANITO)){
+          const ex = m.campos.find(c => c.chave === k);
+          if (!ex) m.campos.push(campo(nome, "item", "cm", k)); else ex.nivel = "item";
+        }
+        if (!m.tiposBancada?.length) m.tiposBancada = tiposPadraoGranito();
+        if (!/\barea_unit\b/.test(m.formula || "")) m.formula = (m.campos.some(c => c.chave === "repeticoes") ? "repeticoes * " : "") + "area_unit";
+        if (!m.unidade || m.unidade === "un") m.unidade = "m²";
+        toast("Regra de área de bancada ativada: colunas de medidas e tipos de bancada adicionados.", 4000);
+      } else {
+        delete m.especial;
+        if (/\barea_unit\b/.test(m.formula || "")) toast("A fórmula ainda usa a área unitária, que só existe com a regra de bancada. Ajuste a fórmula.", 5000);
+      }
+      S.modeloDirty = true; render(); return;
+    }
+    if (d.mchave !== undefined){
+      const m = S.modeloEdit, c = m.campos[+d.mchave], antiga = c.chave;
+      const nova = slug(t.value);
+      if (CHAVES_RESERVADAS.includes(nova) || (ehGranito(m) && nova in CHAVES_GRANITO)){ alert(`A chave "${nova}" é reservada pelo sistema.`); t.value = antiga; return; }
+      if (m.campos.some(x => x !== c && x.chave === nova)){ alert(`Já existe uma coluna com a chave "${nova}".`); t.value = antiga; return; }
+      c.chave = nova; delete c._novo; t.value = nova;
+      if (nova !== antiga){
+        m.formula = String(m.formula || "").replace(new RegExp(`\\b${antiga}\\b`, "g"), nova);
+        const f = document.getElementById("mFormula"); if (f) f.value = m.formula;
+        S.modeloDirty = true; atualizarChips(); atualizarFormula();
+      }
+      return;
+    }
+    if (d.mcheck){ S.modeloEdit[d.mcheck] = t.checked; S.modeloDirty = true;
+      if (d.mcheck === "usaNivel2" && !t.checked) S.modeloEdit.campos.forEach(c => c.nivel = "item");
+      render(); return; }
+    if (d.mbind && t.tagName === "SELECT"){ render(); return; }
+  }
+});
+app.addEventListener("click", e => {
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  if (b.tagName === "TR" && e.target.closest("button,input,select,label")) return;
+  executar(b.dataset.act, b.dataset, e);
+});
+
+function chaveUnica(base, campos, self){
+  let k = base || "campo", n = 2;
+  while (campos.some(c => c !== self && c.chave === k)) k = `${base}_${n++}`;
+  return k;
+}
+function atualizarChips(){
+  const m = S.modeloEdit; const box = document.getElementById("mChips"); if (box) box.innerHTML = chipsCampos(m);
+  const pv = document.getElementById("mPreviaCampos"); if (pv) pv.innerHTML = previaCampos(m);
+}
+function atualizarFormula(){
+  const m = S.modeloEdit; const box = document.getElementById("mFormulaMsg"); if (!box) return;
+  let erro = null, res = null;
+  try { const ast = compilar(m.formula, chavesDe(m)); res = avaliar(ast, previaValores(m)); } catch (ex){ erro = ex.message; }
+  box.innerHTML = erro ? `<div class="formula-erro">${esc(erro)}</div>` : `<div class="formula-ok">Fórmula válida</div><div class="legivel">Total = ${esc(formulaLegivel(m))}</div>`;
+  const p = document.getElementById("mPrev"); if (p) p.textContent = "= " + (erro ? "—" : qtdF(res));
+}
+const proximaRev = r => { const mm = /^(\D*)(\d+)$/.exec(r || ""); return mm ? mm[1] + String(+mm[2] + 1).padStart(mm[2].length, "0") : (r || "R00"); };
+
+async function executar(a, d, e){
+  const q = S.q; const gi = +d.g, pi = +d.p, ii = +d.i;
+  const mudou = () => { marcarAlterado(); renderAba(); };
+  try {
+  switch (a){
+    /* navegação */
+    case "irObras": if (S.view === "obras") return; await irPara("obras"); break;
+    case "irModelos": await irPara("modelos"); break;
+    case "irIncc": await irPara("incc"); break;
+    case "sair": if (!podeSair()) return; fecharQQP(); await signOut(auth); break;
+    case "abrirObra": abrirObra(d.id); break;
+    case "voltarObra": await sairDaQQP("obra"); break;
+    case "obraTab": if (S.obraTab === "estrutura" && S.obraDirty && !confirm("A estrutura tem alterações não salvas. Trocar de aba mesmo assim?")) return;
+      if (S.obraTab === "estrutura" && S.obraDirty){ const o = obraAtual(); S.obraEdit = clone(o.estrutura || { grupos: [] }); S.obraEdit.grupos ??= []; S.obraDirty = false; }
+      S.obraTab = d.tab; render(); break;
+
+    /* obras */
+    case "novaObra": modalNovaObra(); break;
+    case "salvarDadosObra": {
+      const o = obraAtual(); const nome = document.getElementById("oNome").value.trim(); if (!nome) return alert("Informe o nome da obra.");
+      Object.assign(o, { nome, codigo: document.getElementById("oCod").value.trim(), cidade: document.getElementById("oCid").value.trim() });
+      const { id, ...r } = o; await setDoc(doc(db, C_OBRA, o.id), r); toast("Dados da obra salvos."); render(); break; }
+    case "excluirObra": {
+      if (S.qqps.length) return alert("Esta obra tem QQPs. Exclua as QQPs antes de excluir a obra.");
+      const o = obraAtual(); if (!confirm(`Excluir a obra "${o.nome}"?`)) return;
+      await deleteDoc(doc(db, C_OBRA, o.id)); S.obras = S.obras.filter(x => x.id !== o.id); S.view = "obras"; render(); toast("Obra excluída."); break; }
+    case "oAddG": S.obraEdit.grupos.push({ id: uid(), nome: "", n2: [] }); S.obraDirty = true; render(); break;
+    case "oAddN2": { const g = S.obraEdit.grupos[gi]; const ant = g.n2[g.n2.length - 1]; g.n2.push({ id: uid(), nome: "", valores: clone(ant?.valores || {}) }); S.obraDirty = true; render(); break; }
+    case "oMov": if (isNaN(pi)) moveArr(S.obraEdit.grupos, gi, +d.d); else moveArr(S.obraEdit.grupos[gi].n2, pi, +d.d); S.obraDirty = true; render(); break;
+    case "oDel": if (isNaN(pi)){ if (!confirm("Excluir o agrupador e seus pavimentos?")) return; S.obraEdit.grupos.splice(gi, 1); } else S.obraEdit.grupos[gi].n2.splice(pi, 1); S.obraDirty = true; render(); break;
+    case "salvarEstrutura": {
+      const o = obraAtual(); o.estrutura = clone(S.obraEdit); const { id, ...r } = o;
+      await setDoc(doc(db, C_OBRA, o.id), r); S.obraDirty = false; render(); toast("Estrutura da obra salva."); break; }
+
+    /* QQPs na obra */
+    case "novaQQP": modalNovaQQP(); break;
+    case "abrirQQP": abrirQQP(d.id); break;
+    case "duplicarQQP": e?.stopPropagation(); modalNovaQQP(d.id); break;
+    case "excluirQQP": {
+      e?.stopPropagation(); const x = S.qqps.find(z => z.id === d.id);
+      if (!confirm(`Excluir a QQP "${x.pacote} ${x.revisao}"? Essa ação não pode ser desfeita.`)) return;
+      await deleteDoc(doc(db, C_QQP, d.id)); S.qqps = S.qqps.filter(z => z.id !== d.id); render(); toast("QQP excluída."); break; }
+
+    /* modelos */
+    case "novoModelo": S.modeloEdit = { id: uid(), _novo: true, nome: "", unidade: "un", usaNivel2: true, nivel2Nome: "Pavimento", valorGlobal: false, campos: [], descritivas: [], formula: "" };
+      S.modeloDirty = false; S.previa = {}; await irPara("modelo"); break;
+    case "abrirModelo": if (e?.target.closest("button")) return; S.modeloEdit = clone(modeloPorId(d.id)); S.previa = {}; await irPara("modelo"); break;
+    case "duplicarModelo": { e?.stopPropagation(); const m = clone(modeloPorId(d.id)); m.id = uid(); m._novo = true; m.nome = m.nome + " (cópia)"; S.modeloEdit = m; S.previa = {}; await irPara("modelo"); S.modeloDirty = true; break; }
+    case "mAddCampo": { const c = { id: uid(), chave: "", nome: "", nivel: "item", unidade: "", _novo: true }; c.chave = chaveUnica("coluna", S.modeloEdit.campos, c); S.modeloEdit.campos.push(c); S.modeloDirty = true; render(); document.querySelectorAll('[data-mbind$=".nome"][data-mbind^="campos."]').forEach((el, i, all) => { if (i === all.length - 1) el.focus(); }); break; }
+    case "mDelCampo": { const c = S.modeloEdit.campos[ii]; if (chaveTravada(S.modeloEdit, c)) return; if (new RegExp(`\\b${c.chave}\\b`).test(S.modeloEdit.formula) && !confirm(`A coluna "${c.nome}" está na fórmula. Excluir mesmo assim?`)) return; S.modeloEdit.campos.splice(ii, 1); S.modeloDirty = true; render(); break; }
+    case "mAddDesc": S.modeloEdit.descritivas.push({ id: uid(), nome: "" }); S.modeloDirty = true; render(); break;
+    case "mDelDesc": S.modeloEdit.descritivas.splice(ii, 1); S.modeloDirty = true; render(); break;
+    case "mIns": {
+      const m = S.modeloEdit; const pos = S.caret ?? m.formula.length;
+      m.formula = (m.formula.slice(0, pos) + d.t + m.formula.slice(pos)).replace(/\s{2,}/g, " ");
+      S.caret = Math.min(pos + d.t.length, m.formula.length); S.modeloDirty = true; render();
+      const inp = document.getElementById("mFormula"); inp.focus(); inp.setSelectionRange(S.caret, S.caret); break; }
+    case "mAddTipo": (S.modeloEdit.tiposBancada ??= []).push({ id: uid(), nome: "", rC: 1, rL: 0, tC: 1, tL: 0 }); S.modeloDirty = true; render(); break;
+    case "mDelTipo": S.modeloEdit.tiposBancada.splice(ii, 1); S.modeloDirty = true; render(); break;
+    case "mMovCampo": moveArr(S.modeloEdit.campos, ii, +d.d); S.modeloDirty = true; render(); break;
+    case "mMovDesc": moveArr(S.modeloEdit.descritivas, ii, +d.d); S.modeloDirty = true; render(); break;
+    case "mRestaurarGranito": {
+      const m = S.modeloEdit;
+      for (const [k, nome] of Object.entries(CHAVES_GRANITO)) if (!m.campos.some(c => c.chave === k)) m.campos.push(campo(nome, "item", "cm", k));
+      if (!/\barea_unit\b/.test(m.formula)) m.formula = (m.campos.some(c => c.chave === "repeticoes") ? "repeticoes * " : "") + "area_unit";
+      S.modeloDirty = true; render(); toast("Colunas do granito restauradas. Confira a fórmula e salve o modelo."); break; }
+    case "pers": modalPers(d.id); break;
+    case "mLimpar": S.modeloEdit.formula = ""; S.caret = 0; S.modeloDirty = true; render(); break;
+    case "salvarModelo": {
+      const m = S.modeloEdit;
+      if (!m.nome.trim()) return alert("Informe o nome da carteira.");
+      if (m.campos.some(c => !c.nome.trim())) return alert("Todas as colunas de quantidade precisam de nome.");
+      try { compilar(m.formula, chavesDe(m)); } catch (ex){ return alert("A fórmula tem um problema: " + ex.message); }
+      if (ehGranito(m) && (m.tiposBancada || []).some(t => !String(t.nome || "").trim())) return alert("Todos os tipos de bancada precisam de nome.");
+      if (S.modelos.some(x => x.id !== m.id && chave(x.nome) === chave(m.nome))) return alert("Já existe um modelo com esse nome.");
+      const limpo = clone(m); delete limpo._novo; limpo.campos.forEach(c => delete c._novo);
+      const anterior = modeloPorId(m.id); const renN2 = {};
+      if (anterior) limpo.campos.filter(c => c.nivel === "n2").forEach(c => { const a = anterior.campos.find(x => x.id === c.id); if (a && a.chave !== c.chave) renN2[a.chave] = c.chave; });
+      const { id, ...r } = limpo; await setDoc(doc(db, C_MOD, id), r);
+      if (Object.keys(renN2).length){
+        for (const o of S.obras){
+          let mudouObra = false;
+          (o.estrutura?.grupos || []).forEach(g => (g.n2 || []).forEach(p => { for (const [a, n] of Object.entries(renN2)) if (p.valores && a in p.valores && !(n in p.valores)){ p.valores[n] = p.valores[a]; delete p.valores[a]; mudouObra = true; } }));
+          if (mudouObra){ const { id: oid, ...ro } = o; await setDoc(doc(db, C_OBRA, oid), ro); }
+        }
+      }
+      const i = S.modelos.findIndex(x => x.id === id); if (i >= 0) S.modelos[i] = limpo; else S.modelos.push(limpo);
+      S.modelos.sort((a, b) => a.nome.localeCompare(b.nome)); S.modeloEdit = clone(limpo); S.modeloDirty = false; render(); toast("Modelo salvo."); break; }
+    case "excluirModelo": { const m = S.modeloEdit; if (!confirm(`Excluir o modelo "${m.nome}"? As QQPs já criadas com ele não são afetadas.`)) return;
+      await deleteDoc(doc(db, C_MOD, m.id)); S.modelos = S.modelos.filter(x => x.id !== m.id); S.modeloDirty = false; S.view = "modelos"; render(); toast("Modelo excluído."); break; }
+
+    /* INCC */
+    case "inccAdd": { const L = S.inccEdit; const ult = L[L.length - 1]?.mes; let prox = "";
+      if (ult){ const [y, mm] = ult.split("-").map(Number); const dt = new Date(y, mm, 1); prox = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`; }
+      L.push({ mes: prox, valor: null }); S.inccDirty = true; render(); break; }
+    case "inccDel": S.inccEdit.splice(ii, 1); S.inccDirty = true; render(); break;
+    case "inccColar": modalColarIncc(); break;
+    case "salvarIncc": {
+      const L = S.inccEdit.filter(x => x.mes && num(x.valor) > 0);
+      const meses = new Set(); for (const x of L){ if (meses.has(x.mes)) return alert(`O mês ${mesBR(x.mes)} aparece duas vezes.`); meses.add(x.mes); }
+      L.sort((a, b) => a.mes.localeCompare(b.mes)); L.forEach(x => x.valor = num(x.valor));
+      await setDoc(doc(db, C_CFG, "incc"), { serie: L }); S.incc = clone(L); S.inccEdit = clone(L); S.inccDirty = false; render(); toast("Tabela de INCC salva."); break; }
+
+    /* QQP */
+    case "tab": S.tab = d.tab; render(); break;
+    case "salvar": document.activeElement?.blur?.(); salvar(); break;
+    case "sobrescrever": salvar(true); break;
+    case "recarregarRemoto": S.q = normalizarQQP(clone(semMeta(S.remotoPendente))); S.versao = S.remotoPendente.versao || 0; S.dirty = false; S.remotoPendente = null; render(); break;
+    case "exportar": exportarExcel(); break;
+    case "toggle": S.fechados.has(d.id) ? S.fechados.delete(d.id) : S.fechados.add(d.id); renderAba(); break;
+    case "expandir": S.fechados.clear(); renderAba(); break;
+    case "recolher": q.grupos.forEach(g => g.n2.forEach(p => S.fechados.add(p.id))); renderAba(); break;
+    case "filtroTodos": S.ocultos.clear(); renderAba(); break;
+    case "addGrupo": q.grupos.push({ id: uid(), nome: "", orcamento: null, n2: [{ id: uid(), nome: "", valores: {}, itens: [] }] }); mudou(); focarUltimo('[data-bind^="grupos."][data-bind$=".nome"]:not([data-bind*=".n2."])'); break;
+    case "addN2": { const g = q.grupos[gi]; const ant = g.n2[g.n2.length - 1];
+      g.n2.push({ id: uid(), nome: "", valores: clone(ant?.valores || {}), itens: [] }); S.fechados.delete(g.id); mudou();
+      focarUltimo(`[data-bind^="grupos.${gi}.n2."][data-bind$=".nome"]`); break; }
+    case "addItem": { const p = q.grupos[gi].n2[pi];
+      p.itens.push({ id: uid(), insumoId: null, valores: {}, desc: {}, escolhas: {}, global: !!q.modelo.valorGlobal, orcModo: "total", orcValor: null }); mudou();
+      focarUltimo(`[data-insumo^="${gi}.${pi}."]`); break; }
+    case "dupN2": { const g = q.grupos[gi]; const c = clone(g.n2[pi]); c.id = uid(); c.nome = (c.nome || "") + " (cópia)"; c.itens.forEach(i => i.id = uid()); g.n2.splice(pi + 1, 0, c); mudou(); break; }
+    case "mov": if (d.nivel === "g") moveArr(q.grupos, gi, +d.d); if (d.nivel === "p") moveArr(q.grupos[gi].n2, pi, +d.d); if (d.nivel === "i") moveArr(q.grupos[gi].n2[pi].itens, ii, +d.d); mudou(); break;
+    case "del": {
+      if (d.nivel === "g"){ const g = q.grupos[gi]; const n = g.n2.reduce((s, p) => s + p.itens.length, 0); if (n && !confirm(`Excluir o agrupador "${g.nome || "sem nome"}" com ${n} insumo(s)?`)) return; q.grupos.splice(gi, 1); }
+      if (d.nivel === "p"){ const p = q.grupos[gi].n2[pi]; if (p.itens.length && !confirm(`Excluir "${p.nome || "sem nome"}" e seus ${p.itens.length} insumo(s)?`)) return; q.grupos[gi].n2.splice(pi, 1); if (!q.grupos[gi].n2.length) q.grupos[gi].n2.push({ id: uid(), nome: "", valores: {}, itens: [] }); }
+      if (d.nivel === "i") q.grupos[gi].n2[pi].itens.splice(ii, 1);
+      mudou(); break; }
+    case "addF": q.fornecedores.push({ id: uid(), nome: "", ajustes: { outros: [] } }); mudou(); focarUltimo(".forn-box .cab input"); break;
+    case "delF": { const f = q.fornecedores[+d.f];
+      if (!confirm(`Excluir o fornecedor "${f.nome || "sem nome"}" e todas as linhas cotadas por ele?`)) return;
+      q.fornecedores.splice(+d.f, 1); q.ofertas = q.ofertas.filter(o => o.fornId !== f.id);
+      todosItens(q).forEach(i => delete i.escolhas[f.id]); S.ocultos.delete(f.id); mudou(); break; }
+    case "movF": moveArr(q.fornecedores, +d.f, +d.d); mudou(); break;
+    case "addAj": q.fornecedores[+d.f].ajustes.outros.push({ desc: "", valor: null }); mudou(); break;
+    case "delAj": q.fornecedores[+d.f].ajustes.outros.splice(ii, 1); mudou(); break;
+    case "addOf": { const ins = q.insumos[+d.k]; const fid = document.getElementById("addOfF" + d.k)?.value; if (!fid) return;
+      q.ofertas.push({ id: uid(), insumoId: ins.id, fornId: fid, linha: "", preco: null, unidVenda: "", contem: null });
+      // mantém as linhas agrupadas por fornecedor na ordem das colunas
+      const ordem = Object.fromEntries(q.fornecedores.map((f, i) => [f.id, i]));
+      q.ofertas = q.ofertas.map((o, i) => ({ o, i })).sort((a, b) => (a.o.insumoId === b.o.insumoId ? (ordem[a.o.fornId] - ordem[b.o.fornId]) || (a.i - b.i) : a.i - b.i)).map(x => x.o);
+      mudou(); const idx = q.ofertas.findIndex(o => o.insumoId === ins.id && o.fornId === fid && !o.linha && o.preco == null);
+      const el = document.querySelector(`[data-bind="ofertas.${idx}.linha"]`); if (el) el.focus(); break; }
+    case "delOf": { const o = q.ofertas[+d.o]; q.ofertas.splice(+d.o, 1); todosItens(q).forEach(i => { if (i.escolhas[o.fornId] === o.id) delete i.escolhas[o.fornId]; }); mudou(); break; }
+    case "delIns": q.insumos.splice(+d.k, 1); q.ofertas = q.ofertas.filter(o => q.insumos.some(i => i.id === o.insumoId)); mudou(); break;
+    case "colarOfertas": modalColarOfertas(); break;
+    case "trazerModelo": {
+      const m = modeloPorId(q.modeloId) || S.modelos.find(x => chave(x.nome) === chave(q.pacote));
+      if (!m) return alert("O modelo desta carteira não existe mais no cadastro.");
+      if (!confirm(`Substituir o modelo desta QQP pela versão atual de "${m.nome}"? Os valores digitados são mantidos; colunas que não existirem mais deixam de aparecer.`)) return;
+      const { id, ...r } = clone(m);
+      const antigas = Object.fromEntries(q.modelo.campos.map(c => [c.id, c.chave])); const ren = {};
+      r.campos.forEach(c => { const a = antigas[c.id]; if (a && a !== c.chave) ren[a] = c.chave; });
+      const renomear = v => { const o = {}; for (const [k, x] of Object.entries(v || {})) o[ren[k] ?? k] = x; return o; };
+      if (Object.keys(ren).length) q.grupos.forEach(g => g.n2.forEach(p => { p.valores = renomear(p.valores); p.itens.forEach(i => i.valores = renomear(i.valores)); }));
+      q.modelo = r; q.modeloId = id; normalizarQQP(q); mudou(); toast("Modelo atualizado. Salve a QQP para manter."); break; }
+    case "salvarComoEstrutura": {
+      const o = obraAtual(); if (o.estrutura?.grupos?.length && !confirm("A obra já tem uma estrutura pré-montada. Substituir pela desta QQP?")) return;
+      const n2Chaves = q.modelo.campos.filter(c => c.nivel === "n2").map(c => c.chave);
+      o.estrutura = { grupos: q.grupos.map(g => ({ id: uid(), nome: g.nome, n2: g.n2.map(p => ({ id: uid(), nome: p.nome, valores: Object.fromEntries(n2Chaves.map(k => [k, p.valores[k] ?? null])) })) })) };
+      const { id, ...r } = o; await setDoc(doc(db, C_OBRA, o.id), r); S.obraEdit = clone(o.estrutura); toast("Estrutura salva na obra."); break; }
+  }
+  } catch (ex){ console.error(ex); alert("Não foi possível concluir: " + ex.message); }
+}
+function focarUltimo(sel){ const els = document.querySelectorAll(sel); const el = els[els.length - 1]; if (el){ el.focus(); el.scrollIntoView({ block: "nearest" }); } }
+
+/* ---------------- janelas ---------------- */
+function abrirModal(html){
+  const bg = document.createElement("div"); bg.className = "modal-bg"; bg.innerHTML = `<div class="modal" role="dialog" aria-modal="true">${html}</div>`;
+  document.body.appendChild(bg);
+  const fechar = () => bg.remove();
+  bg.addEventListener("click", ev => { if (ev.target === bg || ev.target.closest("[data-fechar]")) fechar(); });
+  bg.addEventListener("keydown", ev => { if (ev.key === "Escape") fechar(); });
+  setTimeout(() => bg.querySelector("input,select,textarea")?.focus(), 30);
+  return { bg, fechar };
+}
+function modalNovaObra(){
+  const { bg, fechar } = abrirModal(`<h3>Nova obra</h3><p>As QQPs ficam organizadas dentro da obra.</p>
+    <div class="field"><label for="nfNome">Nome da obra</label><input id="nfNome" placeholder="Ex.: STAY"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="field"><label for="nfCod">Código (opcional)</label><input id="nfCod"></div>
+      <div class="field"><label for="nfCid">Cidade (opcional)</label><input id="nfCid"></div></div>
+    <div class="acts"><button class="btn" data-fechar>Cancelar</button><button class="btn primary" id="nfOk">Criar obra</button></div>`);
+  bg.querySelector("#nfOk").onclick = async () => {
+    const nome = bg.querySelector("#nfNome").value.trim(); if (!nome) return alert("Informe o nome da obra.");
+    if (S.obras.some(o => chave(o.nome) === chave(nome))) return alert("Já existe uma obra com esse nome.");
+    const o = { id: uid(), nome, codigo: bg.querySelector("#nfCod").value.trim(), cidade: bg.querySelector("#nfCid").value.trim(), estrutura: { grupos: [] }, criadaEm: hojeISO() };
+    const { id, ...r } = o;
+    try { await setDoc(doc(db, C_OBRA, id), r); } catch (ex){ return alert("Não foi possível criar a obra: " + ex.message); }
+    S.obras.push(o); S.obras.sort((a, b) => a.nome.localeCompare(b.nome)); fechar(); abrirObra(id);
+  };
+}
+function modalNovaQQP(baseId){
+  const o = obraAtual(); const base = baseId ? S.qqps.find(x => x.id === baseId) : null;
+  const temEstr = o.estrutura?.grupos?.length;
+  const { bg, fechar } = abrirModal(`
+    <h3>${base ? "Nova revisão" : "Nova QQP"}</h3>
+    <p>${base ? `A partir de ${esc(base.pacote)} ${esc(base.revisao)}, com tudo o que ela contém.` : `Escolha a carteira de insumo e o ponto de partida.`}</p>
+    ${base ? "" : `<div class="field"><label for="nqMod">Carteira de insumo</label><select id="nqMod">${S.modelos.map(m => `<option value="${m.id}">${esc(m.nome)}</option>`).join("")}</select></div>`}
+    <div class="field"><label for="nqRev">Revisão</label><input id="nqRev" value="${esc(base ? proximaRev(base.revisao) : "R00")}"></div>
+    ${base ? "" : `<div class="field"><label>Ponto de partida</label>
+      <label class="radio"><input type="radio" name="nqBase" value="branco" ${temEstr ? "" : "checked"}><span>Em branco</span></label>
+      ${temEstr ? `<label class="radio"><input type="radio" name="nqBase" value="obra" checked><span>Estrutura pré-montada da obra<small>Agrupadores e pavimentos com repetições e AP/pav já preenchidos.</small></span></label>` : ""}
+      ${S.qqps.length ? `<label class="radio"><input type="radio" name="nqBase" value="qqp"><span>Copiar de outra QQP desta obra<small>Escolha abaixo o que copiar.</small></span></label>
+        <div id="nqCopia" class="hidden" style="padding-left:24px">
+          <select id="nqSrc" style="width:100%;margin-bottom:6px">${S.qqps.map(x => `<option value="${x.id}">${esc(`${x.pacote} ${x.revisao}`)}</option>`).join("")}</select>
+          <label class="radio"><input type="radio" name="nqModo" value="estrutura" checked><span>Só a estrutura</span></label>
+          <label class="radio"><input type="radio" name="nqModo" value="insumos"><span>Estrutura e insumos com quantidades</span></label>
+        </div>` : ""}</div>`}
+    <div class="acts"><button class="btn" data-fechar>Cancelar</button><button class="btn primary" id="nqOk">Criar QQP</button></div>`);
+  bg.querySelectorAll('input[name="nqBase"]').forEach(r => r.onchange = () => bg.querySelector("#nqCopia")?.classList.toggle("hidden", r.value !== "qqp" || !r.checked));
+  bg.querySelector("#nqOk").onclick = () => {
+    const rev = bg.querySelector("#nqRev").value.trim() || "R00";
+    let q;
+    if (base){
+      q = normalizarQQP(clone(semMeta({ ...base, atualizadoEm: null })));
+      q.revisao = rev; q.data = hojeISO();
+    } else {
+      const m = modeloPorId(bg.querySelector("#nqMod").value); const { id: mid, ...snap } = clone(m);
+      q = normalizarQQP({ obraId: o.id, modeloId: mid, modelo: snap, pacote: m.nome, revisao: rev, data: hojeISO(), incc: {}, observacoes: "", insumos: [], fornecedores: [], ofertas: [], grupos: [] });
+      const modo = bg.querySelector('input[name="nqBase"]:checked')?.value || "branco";
+      const novoN2 = p => ({ id: uid(), nome: p.nome || "", valores: clone(p.valores || {}), itens: [] });
+      if (modo === "obra"){
+        q.grupos = o.estrutura.grupos.map(g => ({ id: uid(), nome: g.nome, orcamento: null, n2: snap.usaNivel2 ? g.n2.map(novoN2) : [{ id: uid(), nome: "", valores: {}, itens: [] }] }));
+      } else if (modo === "qqp"){
+        const src = normalizarQQP(clone(semMeta({ ...S.qqps.find(x => x.id === bg.querySelector("#nqSrc").value), atualizadoEm: null })));
+        const comItens = bg.querySelector('input[name="nqModo"]:checked').value === "insumos";
+        q.grupos = src.grupos.map(g => ({ id: uid(), nome: g.nome, orcamento: null, n2: g.n2.map(p => ({ ...novoN2(p), itens: comItens ? p.itens.map(i => ({ ...clone(i), id: uid(), escolhas: {}, orcValor: null })) : [] })) }));
+        if (comItens){ const usados = new Set(todosItens(q).map(i => i.insumoId)); q.insumos = src.insumos.filter(i => usados.has(i.id)); }
+      }
+      normalizarQQP(q);
+    }
+    fechar(); fecharQQP();
+    S.id = null; S.q = q; S.versao = 0; S.dirty = true; S.salvoEm = null; S.view = "qqp"; S.ocultos = new Set();
+    S.tab = q.grupos.length && q.fornecedores.length ? "comp" : "quant";
+    render(); salvar();
+  };
+}
+function modalPers(itemId){
+  const q = S.q, it = todosItens(q).find(x => x.id === itemId); if (!it) return;
+  it.pers ??= [];
+  const ins = insumoDe(q, it.insumoId), un = unidadeInsumo(q, ins);
+  const { bg, fechar } = abrirModal(`<h3>Personalizações</h3>
+    <p>${esc(ins?.nome || "Insumo")}. Cada linha soma ou subtrai da quantidade padrão (use números negativos para retirar), em ${esc(un)}.</p>
+    <div id="pResumo" style="font-family:var(--font-cond);font-size:16px;margin-bottom:10px"></div>
+    <table class="campos"><thead><tr><th style="width:140px">Onde</th><th style="width:90px">Qtd (+/−)</th><th>Motivo</th><th style="width:34px"></th></tr></thead><tbody id="pLinhas"></tbody></table>
+    <div style="margin-top:8px"><button class="btn sm" id="pAdd">+ Personalização</button></div>
+    <div class="acts"><button class="btn primary" id="pOk">Concluir</button></div>`);
+  bg.querySelector(".modal").style.width = "min(640px,100%)";
+  const desenhar = () => {
+    bg.querySelector("#pLinhas").innerHTML = it.pers.map((x, i) => `<tr>
+      <td><input data-p="${i}.onde" value="${esc(x.onde)}" placeholder="AP 501 / pav 5" aria-label="Onde"></td>
+      <td><input data-p="${i}.qtd" value="${esc(inVal(x.qtd))}" inputmode="decimal" placeholder="−2" style="text-align:center" aria-label="Quantidade"></td>
+      <td><input data-p="${i}.motivo" value="${esc(x.motivo)}" placeholder="Ex.: entregue no osso" aria-label="Motivo"></td>
+      <td><button class="icon del" data-pdel="${i}" aria-label="Excluir personalização">✕</button></td></tr>`).join("") || `<tr><td colspan="4" style="color:var(--muted);padding:10px 6px">Nenhuma personalização.</td></tr>`;
+    resumo();
+  };
+  const resumo = () => {
+    const I = calc(q).itens[it.id];
+    bg.querySelector("#pResumo").innerHTML = `Padrão <b>${qtdF(I.base)}</b> ${I.persSoma < 0 ? "−" : "+"} personalizações <b>${qtdF(Math.abs(I.persSoma))}</b> = <b>${qtdF(I.qtd)} ${esc(un)}</b>`;
+  };
+  bg.addEventListener("input", e => { const k = e.target.dataset.p; if (!k) return; const [i, f] = k.split("."); it.pers[+i][f] = f === "qtd" ? parseIn(e.target.value) : e.target.value; marcarAlterado(); resumo(); });
+  bg.addEventListener("click", e => { const del = e.target.dataset.pdel; if (del !== undefined){ it.pers.splice(+del, 1); marcarAlterado(); desenhar(); } });
+  bg.querySelector("#pAdd").onclick = () => { it.pers.push({ id: uid(), onde: "", qtd: null, motivo: "" }); marcarAlterado(); desenhar(); const ins2 = bg.querySelectorAll('[data-p$=".onde"]'); ins2[ins2.length - 1]?.focus(); };
+  const concluir = () => { it.pers = it.pers.filter(x => x.onde || x.motivo || num(x.qtd)); fechar(); renderAba(); };
+  bg.querySelector("#pOk").onclick = concluir;
+  // fechar pela tecla Esc ou clicando fora também aplica
+  bg.addEventListener("click", e => { if (e.target === bg) renderAba(); });
+  bg.addEventListener("keydown", e => { if (e.key === "Escape") renderAba(); });
+  desenhar();
+}
+function parseMes(s){
+  s = String(s || "").trim().toLowerCase();
+  let m = /^(\d{4})-(\d{1,2})/.exec(s); if (m) return `${m[1]}-${m[2].padStart(2, "0")}`;
+  m = /^(?:\d{1,2}\/)?(\d{1,2})\/(\d{2,4})$/.exec(s); if (m){ const y = m[2].length === 2 ? "20" + m[2] : m[2]; return `${y}-${m[1].padStart(2, "0")}`; }
+  m = /^([a-zç]{3})[a-zç]*[\/\-\s.]*(\d{2,4})$/.exec(s); if (m){ const i = MESES.indexOf(m[1]); if (i >= 0){ const y = m[2].length === 2 ? "20" + m[2] : m[2]; return `${y}-${String(i + 1).padStart(2, "0")}`; } }
+  return null;
+}
+function modalColarIncc(){
+  const { bg, fechar } = abrirModal(`<h3>Colar índices do INCC</h3>
+    <p>Copie duas colunas do Excel, mês e índice, e cole abaixo. Meses já cadastrados têm o índice atualizado. Formatos aceitos: 11/2025, nov/25, 2025-11 ou 01/11/2025.</p>
+    <div class="field"><textarea id="icTxt" placeholder="nov/2025&#9;1091,25&#10;dez/2025&#9;1095,80"></textarea></div>
+    <div class="acts"><button class="btn" data-fechar>Cancelar</button><button class="btn primary" id="icOk">Adicionar</button></div>`);
+  bg.querySelector("#icOk").onclick = () => {
+    let n = 0, ruins = 0;
+    bg.querySelector("#icTxt").value.split(/\r?\n/).forEach(r => {
+      if (!r.trim()) return; const c = r.split(/\t|;/); const mes = parseMes(c[0]); const v = parseIn(c[c.length - 1]);
+      if (!mes || !v){ ruins++; return; }
+      const ex = S.inccEdit.find(x => x.mes === mes); if (ex) ex.valor = v; else S.inccEdit.push({ mes, valor: v }); n++;
+    });
+    S.inccEdit.sort((a, b) => (a.mes || "").localeCompare(b.mes || "")); S.inccDirty = true; fechar(); render();
+    toast(`${n} mês(es) lançado(s)${ruins ? `, ${ruins} linha(s) não reconhecida(s)` : ""}. Salve a tabela para manter.`, 4000);
+  };
+}
+function modalColarOfertas(){
+  const { bg, fechar } = abrirModal(`<h3>Colar preços do Excel</h3>
+    <p>Uma linha por preço, com as colunas nesta ordem: insumo, fornecedor, linha/produto, preço cotado e, opcionalmente, unidade de venda e quanto ela contém. Insumos e fornecedores são localizados pelo nome; fornecedores novos são criados.</p>
+    <div class="field"><textarea id="coTxt" placeholder="BACIA COM CAIXA ACOPLADA&#9;ROCA&#9;VASO ZIP PLUS&#9;358,22&#10;MASSA DRYWALL&#9;TREVO&#9;MASSA PRONTA&#9;84,89&#9;saco 28 kg&#9;28"></textarea></div>
+    <div class="acts"><button class="btn" data-fechar>Cancelar</button><button class="btn primary" id="coOk">Adicionar preços</button></div>`);
+  bg.querySelector("#coOk").onclick = () => {
+    const q = S.q; let n = 0, u = 0, novosIns = 0, ruins = 0;
+    bg.querySelector("#coTxt").value.split(/\r?\n/).forEach(r => {
+      if (!r.trim()) return; const c = r.split("\t").map(x => x.trim());
+      if (c.length < 4 || !c[0] || !c[1]){ ruins++; return; }
+      let ins = q.insumos.find(x => chave(x.nome) === chave(c[0])); if (!ins){ ins = { id: uid(), nome: c[0], unidade: "" }; q.insumos.push(ins); novosIns++; }
+      let f = q.fornecedores.find(x => chave(x.nome) === chave(c[1])); if (!f){ f = { id: uid(), nome: c[1], ajustes: { outros: [] } }; q.fornecedores.push(f); }
+      const ex = q.ofertas.find(o => o.insumoId === ins.id && o.fornId === f.id && chave(o.linha) === chave(c[2]));
+      const dados = { preco: parseIn(c[3]), unidVenda: c[4] || "", contem: c[5] ? parseIn(c[5]) : null };
+      if (ex){ Object.assign(ex, dados); u++; } else { q.ofertas.push({ id: uid(), insumoId: ins.id, fornId: f.id, linha: c[2], ...dados }); n++; }
+    });
+    fechar(); marcarAlterado(); renderAba();
+    toast(`${n} preço(s) adicionado(s)${u ? `, ${u} atualizado(s)` : ""}${novosIns ? `, ${novosIns} insumo(s) novo(s) sem uso nos quantitativos` : ""}${ruins ? `, ${ruins} linha(s) ignorada(s)` : ""}.`, 5000);
+  };
+}
+
+/* ---------------- exportar Excel ---------------- */
+function exportarExcel(){
+  if (!window.XLSX){ alert("A biblioteca de exportação não carregou. Verifique a conexão e recarregue a página."); return; }
+  const q = S.q, F = q.fornecedores, R = calc(q), m = q.modelo, D = m.descritivas, C = m.campos, o = obraAtual();
+  const L = [];
+  const pre = n => Array(n).fill("");
+  L.push([`QUADRO DE QUANTIDADES E PREÇO - ${(q.pacote || "").toUpperCase()}`]);
+  L.push([`Obra: ${o?.nome || ""}`, "", `Revisão: ${q.revisao}`, "", `Data: ${dataBR(q.data)}`]);
+  L.push([`INCC base: ${R.inccBase ?? ""}`, "", `INCC atual: ${R.inccAtual ?? ""}`, "", `Fator: ${R.fator.toFixed(4).replace(".", ",")}`]);
+  L.push([`Total = ${formulaLegivel(m)}`]);
+  L.push([]);
+  const GR = ehGranito(m);
+  const hdr = ["ID", (m.usaNivel2 ? `${m.nivel2Nome} / ${rotuloInsumo(m)}` : rotuloInsumo(m)).toUpperCase(), ...D.map(x => x.nome.toUpperCase()), ...(GR ? ["TIPO"] : []), ...C.map(c => c.nome.toUpperCase()), "TOTAL", "UN"];
+  const nFix = hdr.length;
+  L.push([...hdr, ...F.flatMap(f => [f.nome, "", "", ""]), "ORÇAMENTO", ""]);
+  L.push([...pre(nFix), ...F.flatMap(() => ["LINHA", "EMBALAGEM", "PREÇO UNIT", "PREÇO TOTAL"]), "BASE", "CORRIGIDO"]);
+  const hdrRow = L.length - 2;
+  const tots = t => F.flatMap(f => ["", "", "", t[f.id].total]);
+  L.push([1, "TOTAL DOS ITENS", ...pre(nFix - 2), ...tots(R.total), R.orc || "", R.orcCorr || ""]);
+  if (F.some(f => R.final[f.id].ajuste)){
+    L.push(["", "AJUSTES (FRETE, DESCONTOS, OUTROS)", ...pre(nFix - 2), ...F.flatMap(f => ["", "", "", R.final[f.id].ajuste])]);
+    L.push(["", "TOTAL COM AJUSTES", ...pre(nFix - 2), ...F.flatMap(f => ["", "", "", R.final[f.id].total])]);
+  }
+  for (const g of q.grupos){
+    const G = R.grupos[g.id];
+    L.push([1, g.nome, ...pre(D.length + (GR ? 1 : 0) + C.length), G.qtd, "", ...tots(G.total), G.orc || "", G.orc ? G.orc * R.fator : ""]);
+    for (const p of g.n2){
+      const P = R.n2[p.id];
+      if (m.usaNivel2) L.push([2, p.nome, ...pre(D.length + (GR ? 1 : 0)), ...C.map(c => c.nivel === "n2" ? num(p.valores[c.chave]) : ""), P.qtd, "", ...tots(P.total), P.orc || "", P.orc ? P.orc * R.fator : ""]);
+      for (const it of p.itens){
+        const I = R.itens[it.id], ins = insumoDe(q, it.insumoId), un = unidadeInsumo(q, ins);
+        L.push([3, ins?.nome || "", ...D.map(x => it.desc[x.id] || ""), ...(GR ? [I.partes?.tipo || ""] : []), ...C.map(c => it.global ? "" : num(I.vars[c.chave])), it.global ? "VG" : I.qtd, un,
+          ...F.flatMap(f => { const x = I.por[f.id]; return x.o ? [x.o.linha, x.o.unidVenda ? `${x.o.unidVenda} (${qtdF(num(x.o.contem) || 1)} ${un})` : "", x.unit, x.total] : ["-", "", "", ""]; }),
+          I.orc || "", I.orc ? I.orc * R.fator : ""]);
+      }
+    }
+  }
+  L.push([]); L.push(["", "RESUMO POR INSUMO", ...pre(nFix - 2)]);
+  for (const ins of R.insumos.values()) L.push(["", ins.nome, ...pre(D.length + (GR ? 1 : 0) + C.length), ins.qtd, ins.un, ...tots(ins.total)]);
+  L.push([]); L.push(["", "FORNECEDOR", "PRAZO DE ENTREGA", "PAGAMENTO", "FRETE", "VALIDADE", "CONTATO", "TELEFONE", "E-MAIL", "OBSERVAÇÕES"]);
+  F.forEach(f => L.push(["", f.nome, f.prazoEntrega || "", f.condicaoPagamento || "", f.frete || "", dataBR(f.validade), f.contato || "", f.telefone || "", f.email || "", f.obs || ""]));
+  const ws = XLSX.utils.aoa_to_sheet(L);
+  ws["!cols"] = [{wch:4},{wch:44}, ...D.map(() => ({wch:16})), ...(GR ? [{wch:24}] : []), ...C.map(() => ({wch:11})), {wch:10},{wch:6}, ...F.flatMap(() => [{wch:26},{wch:18},{wch:12},{wch:14}]), {wch:14},{wch:14}];
+  ws["!merges"] = F.map((f, k) => ({ s:{ r: hdrRow, c: nFix + k * 4 }, e:{ r: hdrRow, c: nFix + k * 4 + 3 } }));
+  for (const addr in ws){ if (addr[0] === "!") continue; const c = ws[addr]; if (c.t === "n") c.z = "#,##0.00"; }
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "COMPARATIVO");
+  const P = [["AGRUPADOR", m.usaNivel2 ? m.nivel2Nome.toUpperCase() : "", rotuloInsumo(m).toUpperCase(), "ONDE", "QTD (+/−)", "MOTIVO"]];
+  q.grupos.forEach(g => g.n2.forEach(p => p.itens.forEach(it => (it.pers || []).forEach(x => P.push([g.nome, p.nome, insumoDe(q, it.insumoId)?.nome || "", x.onde || "", num(x.qtd), x.motivo || ""])))));
+  if (P.length > 1){ const wp = XLSX.utils.aoa_to_sheet(P); wp["!cols"] = [{wch:16},{wch:30},{wch:36},{wch:16},{wch:10},{wch:40}]; XLSX.utils.book_append_sheet(wb, wp, "PERSONALIZACOES"); }
+  const nome = `QQP_${q.pacote}_${q.revisao}_${o?.nome || ""}`.replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, "_");
+  XLSX.writeFile(wb, nome + ".xlsx");
+}
+
+/* gancho de teste local (sem efeito em produção) */
+window.__qqp = { S, calc, compilar, avaliar, render };
+</script>
+</body>
+</html>
