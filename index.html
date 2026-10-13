@@ -459,6 +459,38 @@ details.filtro label:hover{background:var(--sand)}
 .toast{background:var(--wine-dark);border-radius:999px;padding:10px 20px}
 .modal{border-radius:14px}
 .modal h3{color:var(--primary)}
+
+/* decisão de compra */
+.rk.decidida .barra{background:var(--green)}
+.rk.decidida{background:linear-gradient(90deg,rgba(22,163,74,.06),transparent);border-radius:8px;padding-left:6px;padding-right:6px}
+.qqp td.dec-td{padding:3px 4px}
+.dec-cel{width:100%;min-width:130px;text-align:right;font-family:var(--font-cond);font-size:14px;font-variant-numeric:tabular-nums;border:1.5px solid transparent;background:transparent;border-radius:8px;padding:5px 8px;cursor:pointer;color:var(--ink)}
+.dec-cel:hover:not(:disabled){border-color:var(--rule-strong);background:var(--sand)}
+.dec-cel.best{color:var(--best-ink);font-weight:600}
+.dec-cel.sel{background:var(--primary-soft);border-color:var(--primary);color:var(--primary);font-weight:700}
+.dec-cel.sel::before{content:"✓ ";}
+.dec-cel:disabled{cursor:default}
+.dec-cel .nc{color:var(--faint);font-weight:400}
+.dec-resumo{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;margin-top:14px;align-items:start}
+.dec-forn{width:100%;border-collapse:collapse;background:var(--paper);border:1px solid var(--rule);border-radius:12px;overflow:hidden;font-family:var(--font-cond);font-size:14px}
+.dec-forn th{text-align:left;text-transform:uppercase;letter-spacing:.06em;font-size:11px;color:var(--muted);background:var(--sand);padding:8px 10px;border-bottom:1px solid var(--rule)}
+.dec-forn th.n,.dec-forn td.n{text-align:right;font-variant-numeric:tabular-nums}
+.dec-forn td{padding:7px 10px;border-bottom:1px solid var(--rule)}
+.dec-forn .emb{display:block;font-size:11px;color:var(--faint)}
+.dec-cards{display:grid;gap:10px}
+.dc{background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:12px 16px;display:flex;flex-direction:column;gap:2px}
+.dc span{text-transform:uppercase;letter-spacing:.08em;font-size:11px;font-weight:600;color:var(--muted)}
+.dc b{font-family:var(--font-wide);font-stretch:112%;font-size:22px;font-variant-numeric:tabular-nums}
+.dc small{color:var(--muted);font-size:12px}
+.dc.ok{border-color:#BFE2CB;background:#F3FAF5}.dc.ok b{color:var(--green)}
+.dc.ruim{border-color:#F1C4BE;background:#FDF3F1}.dc.ruim b{color:var(--danger)}
+@media (max-width:900px){.dec-resumo{grid-template-columns:1fr}}
+
+/* batente de porta */
+.bat-btn{border:1px solid var(--rule-strong);background:var(--paper);border-radius:999px;font-size:11px;padding:1px 7px;cursor:pointer;white-space:nowrap;color:var(--muted);font-family:var(--font)}
+.bat-btn:hover{border-color:var(--primary);color:var(--primary)}
+.bat-btn.alerta{border-color:#E8C27A;background:var(--warn-bg);color:var(--warn);font-weight:600}
+.bat-ok{color:var(--green);font-weight:700;font-size:13px}
 </style>
 </head>
 <body>
@@ -616,14 +648,48 @@ function modelosPadrao(){
     { nome:"Prumada", usaNivel2:false, nivel2Nome:"Grupo", unidade:"m", valorGlobal:false, descritivas:[], campos:[campo("Quantidade", "item", "", "qtd")], formula:"qtd" },
     { nome:"Revestimento", usaNivel2:true, nivel2Nome:"Tipo", unidade:"m²", valorGlobal:false, descritivas:[], campos:[campo("Área (m²)", "item", "m²", "area"), campo("Perda (%)", "item", "%", "perda")], formula:"area * (1 + perda / 100)" },
     { nome:"Subestação", usaNivel2:true, nivel2Nome:"Subsistema", unidade:"un", valorGlobal:false, descritivas:[], campos:[campo("Quantidade", "item", "", "qtd")], formula:"qtd" },
-    { nome:"Portas", ...pav({ descritivas:[D("Dimensão"), D("Núcleo"), D("Acabamento externo"), D("Largura alisar"), D("Esp. mín."), D("Esp. máx.")] }),
-      campos:[campo("Batente 10+5", "item", "", "bat_10_5"), campo("Batente 12+5", "item", "", "bat_12_5"), campo("Batente 12+7", "item", "", "bat_12_7")], formula:"bat_10_5 + bat_12_5 + bat_12_7" },
+    modeloPortas(),
     { nome:"Portas corta-fogo", usaNivel2:false, nivel2Nome:"Grupo", unidade:"un", valorGlobal:false, descritivas:[D("Dimensão"), D("Classe"), D("Sentido de giro")], campos:[campo("Quantidade", "item", "", "qtd")], formula:"qtd" },
     { nome:"Disjuntores", usaNivel2:false, nivel2Nome:"Grupo", unidade:"vb", valorGlobal:true, descritivas:[], campos:[campo("Quantidade", "item", "", "qtd")], formula:"qtd" },
     { nome:"Interruptores e tomadas", usaNivel2:false, nivel2Nome:"Grupo", unidade:"vb", valorGlobal:true, descritivas:[], campos:[campo("Quantidade", "item", "", "qtd")], formula:"qtd" },
   ];
   lista.push(modeloGranito());
   return lista.map(m => ({ id: uid(), ...m }));
+}
+// descritivas com chave fixa, usadas pela regra de batente
+const DESC_PORTAS = [["batente", "Batente"], ["alisar", "Largura alisar (cm)"], ["esp_min", "Esp. mín. parede (cm)"], ["esp_max", "Esp. máx. parede (cm)"]];
+function modeloPortas(){
+  const D = (nome, chave) => ({ id: uid(), nome, ...(chave ? { chave } : {}) });
+  return { nome: "Portas", especial: "portas", usaNivel2: true, nivel2Nome: "Pavimento", unidade: "un", valorGlobal: false, rotuloInsumo: "Porta",
+    descritivas: [D("Núcleo"), D("Acabamento externo"), ...DESC_PORTAS.map(([k, n]) => D(n, k))],
+    campos: [campo("Repetições", "n2", "", "repeticoes"), campo("Qtd por pavimento", "item", "", "qtd_pav")],
+    formula: "repeticoes * qtd_pav", batentes: ["9+5", "12+5", "12+7"] };
+}
+function aplicarRegraPortas(m){
+  m.especial = "portas";
+  for (const [k, n] of DESC_PORTAS) if (!m.descritivas.some(d => d.chave === k)) m.descritivas.push({ id: uid(), nome: n, chave: k });
+  if (!m.batentes?.length) m.batentes = ["9+5", "12+5", "12+7"];
+}
+function parseBatente(s){
+  const t = String(s || "").replace(/cm/i, "");
+  let mm = /(\d+(?:[.,]\d+)?)\s*\+\s*(\d+(?:[.,]\d+)?)/.exec(t);
+  if (mm){ const b = num(mm[1]), r = num(mm[2]); return { b, r, min: b, max: b + r, txt: `${inVal(b)}+${inVal(r)}` }; }
+  mm = /(\d+(?:[.,]\d+)?)/.exec(t); if (mm){ const b = num(mm[1]); return { b, r: 0, min: b, max: b, txt: inVal(b) }; }
+  return null;
+}
+// verifica se o batente cobre a faixa de espessura da parede e sugere o menor que cobre
+function checarBatente(m, it){
+  if (m?.especial !== "portas") return null;
+  const id = k => m.descritivas.find(d => d.chave === k)?.id;
+  const vMin = it.desc?.[id("esp_min")], vMax = it.desc?.[id("esp_max")];
+  const eMin = String(vMin ?? "").trim() === "" ? null : num(vMin), eMax = String(vMax ?? "").trim() === "" ? null : num(vMax);
+  const lo = eMin ?? eMax, hi = eMax ?? eMin;
+  const atual = parseBatente(it.desc?.[id("batente")]);
+  if (lo == null) return { atual, sugestao: null, ok: null };
+  const cands = (m.batentes || []).map(parseBatente).filter(Boolean).filter(x => x.min <= lo && x.max >= hi).sort((a, b) => (a.max - b.max) || (b.min - a.min));
+  const sugestao = cands[0] || null;
+  const ok = atual ? (atual.min <= lo && atual.max >= hi) : null;
+  return { atual, sugestao, ok, lo, hi };
 }
 function modeloGranito(){
   const D = n => ({ id: uid(), nome: n });
@@ -649,7 +715,7 @@ const modeloPorId = id => S.modelos.find(m => m.id === id);
 function normalizarQQP(q){
   q.modelo ??= { campos: [], formula: "0", descritivas: [], usaNivel2: true, nivel2Nome: "Pavimento", unidade: "un" };
   q.modelo.campos ??= []; q.modelo.descritivas ??= [];
-  q.insumos ??= []; q.fornecedores ??= []; q.ofertas ??= []; q.grupos ??= []; q.incc ??= {};
+  q.insumos ??= []; q.fornecedores ??= []; q.ofertas ??= []; q.grupos ??= []; q.incc ??= {}; q.decisao ??= {};
   q.fornecedores.forEach(f => { f.id ??= uid(); f.ajustes ??= {}; f.ajustes.outros ??= []; });
   q.insumos.forEach(i => { i.id ??= uid(); });
   q.ofertas.forEach(o => { o.id ??= uid(); });
@@ -686,7 +752,7 @@ function calc(q){
   try { ast = compilar(m.formula, chavesDe(m)); } catch (e){ erroFormula = e.message; }
   const { fator, base: inccBase, atual: inccAtual, faltando: inccFaltando } = inccDaQQP(q);
   const zero = () => Object.fromEntries(F.map(f => [f.id, { total: 0, falta: 0 }]));
-  const R = { fator, inccBase, inccAtual, inccFaltando, erroFormula, total: zero(), orc: 0, orcCorr: 0, grupos: {}, n2: {}, itens: {}, insumos: new Map(), final: {} };
+  const R = { nItens: 0, fator, inccBase, inccAtual, inccFaltando, erroFormula, total: zero(), orc: 0, orcCorr: 0, grupos: {}, n2: {}, itens: {}, insumos: new Map(), final: {} };
   const porInsumoForn = {};
   for (const o of q.ofertas){ ((porInsumoForn[o.insumoId] ??= {})[o.fornId] ??= []).push(o); }
   for (const g of q.grupos){
@@ -708,8 +774,9 @@ function calc(q){
         const I = { qtd, base: qtdBase, persSoma, nPers: (it.pers || []).length, vars, orc: orcIt, por: {}, partes };
         const ins = insumoDe(q, it.insumoId);
         const k = it.insumoId || "_sem";
-        if (!R.insumos.has(k)) R.insumos.set(k, { id: it.insumoId, nome: ins?.nome || "(sem insumo)", un: unidadeInsumo(q, ins), qtd: 0, total: zero(), itens: [], escolhidas: {} });
-        const INS = R.insumos.get(k); INS.qtd += it.global ? 0 : qtd; INS.itens.push(it);
+        if (!R.insumos.has(k)) R.insumos.set(k, { id: it.insumoId, nome: ins?.nome || "(sem insumo)", un: unidadeInsumo(q, ins), qtd: 0, orc: 0, total: zero(), itens: [], escolhidas: {} });
+        const INS = R.insumos.get(k); INS.qtd += it.global ? 0 : qtd; INS.orc += orcIt; INS.itens.push(it);
+        if (qtd > 0 || it.global) R.nItens++;
         for (const f of F){
           const ops = (porInsumoForn[it.insumoId]?.[f.id] || []);
           const escId = it.escolhas?.[f.id];
@@ -744,6 +811,23 @@ function calc(q){
     const ajuste = num(a.frete) + outros - desconto;
     R.final[f.id] = { base, ajuste, total: base + ajuste, falta: R.total[f.id].falta };
   }
+  // decisão de compra (pode ser mista): um fornecedor por insumo
+  const DEC = { ins: {}, porForn: {}, total: 0, base: 0, definidos: 0, pendentes: 0, semPreco: 0 };
+  for (const ins of R.insumos.values()){
+    if (!ins.id) continue;
+    const fid = (q.decisao || {})[ins.id];
+    if (!fid || !F.some(f => f.id === fid)){ DEC.pendentes++; continue; }
+    const t = ins.total[fid];
+    DEC.ins[ins.id] = { fid, total: t.total, falta: t.falta }; DEC.definidos++; DEC.semPreco += t.falta;
+    (DEC.porForn[fid] ??= { sub: 0, insumos: 0 }); DEC.porForn[fid].sub += t.total; DEC.porForn[fid].insumos++;
+  }
+  for (const [fid, x] of Object.entries(DEC.porForn)){
+    const a = F.find(f => f.id === fid).ajustes || {};
+    const desconto = x.sub * num(a.descontoPct) / 100 + num(a.descontoValor);
+    x.ajuste = num(a.frete) + (a.outros || []).reduce((t, o) => t + num(o.valor), 0) - desconto;
+    x.total = x.sub + x.ajuste; DEC.base += x.sub; DEC.total += x.total;
+  }
+  R.decisao = DEC;
   return R;
 }
 function menorDe(tot, F){
@@ -754,7 +838,9 @@ function resumoPara(q){
   const R = calc(q);
   const totais = q.fornecedores.map(f => ({ nome: f.nome || "?", total: R.final[f.id].total, falta: R.final[f.id].falta }))
     .sort((a, b) => (a.falta - b.falta) || (a.total - b.total));
-  return { totais, orcCorr: R.orcCorr, itens: Object.keys(R.itens).length };
+  const D = R.decisao;
+  return { totais, orcCorr: R.orcCorr, itens: Object.keys(R.itens).length,
+    decisao: D.definidos ? { total: D.total, definidos: D.definidos, pendentes: D.pendentes, fornecedores: Object.keys(D.porForn).map(id => q.fornecedores.find(f => f.id === id)?.nome || "?") } : null };
 }
 
 /* ---------------- autenticação e carregamento ---------------- */
@@ -782,7 +868,14 @@ async function carregarBase(){
   const mig = await getDoc(doc(db, C_CFG, "migracoes")); const migs = mig.exists() ? mig.data() : {};
   if (!migs.granito){
     if (!S.modelos.some(ehGranito)){ const g = { id: uid(), ...modeloGranito() }; const { id, ...r } = g; await setDoc(doc(db, C_MOD, id), r); S.modelos.push(g); }
-    await setDoc(doc(db, C_CFG, "migracoes"), { ...migs, granito: true });
+    await setDoc(doc(db, C_CFG, "migracoes"), { ...migs, granito: true }); migs.granito = true;
+  }
+  // migração: modelo de portas passa a seguir a aba BASE (repetições × qtd por pavimento, batente como informação)
+  if (!migs.portas2){
+    const alvo = S.modelos.filter(m => (m.campos || []).some(c => /^bat_/.test(c.chave)) || (chave(m.nome) === "PORTAS" && m.especial !== "portas"));
+    for (const m of alvo){ const novo = { ...modeloPortas(), nome: m.nome }; Object.keys(m).forEach(k => { if (k !== "id") delete m[k]; }); Object.assign(m, novo); const { id, ...r } = m; await setDoc(doc(db, C_MOD, id), r); }
+    if (!S.modelos.some(m => m.especial === "portas")){ const g = { id: uid(), ...modeloPortas() }; const { id, ...r } = g; await setDoc(doc(db, C_MOD, id), r); S.modelos.push(g); }
+    await setDoc(doc(db, C_CFG, "migracoes"), { ...migs, portas2: true });
   }
   S.modelos.sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
   S.incc = (inc.exists() ? inc.data().serie : []) || [];
@@ -871,15 +964,17 @@ function obraQQPs(){
   S.qqps.forEach(x => { const k = x.pacote || "Sem carteira"; if (!porCarteira.has(k)) porCarteira.set(k, []); porCarteira.get(k).push(x); });
   return [...porCarteira.entries()].map(([cart, lst]) => `
     <section class="carteira"><h3>${esc(cart)}</h3>
-    <table class="lista"><thead><tr><th style="width:70px">Rev.</th><th>Data</th><th>Forn.</th><th>Menor proposta</th><th class="n">Valor</th><th class="n">Saving</th><th>Atualizado</th><th></th></tr></thead><tbody>
+    <table class="lista"><thead><tr><th style="width:70px">Rev.</th><th>Data</th><th>Forn.</th><th>Compra definida / menor proposta</th><th class="n">Valor</th><th class="n">Saving</th><th>Atualizado</th><th></th></tr></thead><tbody>
     ${lst.map(x => {
-      const r = x.resumo || {}; const m = (r.totais || [])[0];
-      const sav = m && r.orcCorr ? r.orcCorr - m.total : null;
+      const r = x.resumo || {}; const m = (r.totais || [])[0]; const dc = r.decisao;
+      const valor = dc ? dc.total : m?.total;
+      const sav = valor != null && r.orcCorr ? r.orcCorr - valor : null;
       const quando = x.atualizadoEm?.toDate ? x.atualizadoEm.toDate().toLocaleString("pt-BR", {dateStyle:"short", timeStyle:"short"}) : "";
       return `<tr class="click" data-act="abrirQQP" data-id="${x.id}">
         <td class="obra">${esc(x.revisao)}</td><td>${esc(dataBR(x.data))}</td><td>${(x.fornecedores || []).length}</td>
-        <td>${m ? esc(m.nome) + (m.falta ? ` <span style="color:var(--warn)">(incompleto)</span>` : "") : "—"}</td>
-        <td class="n">${m ? brl(m.total) : "—"}</td>
+        <td>${dc ? `<b>Compra definida</b> <span style="color:var(--muted);font-size:13px">${esc(dc.fornecedores.join(" + "))}${dc.pendentes ? ` · ${dc.pendentes} insumo(s) pendente(s)` : ""}</span>`
+          : m ? esc(m.nome) + (m.falta ? ` <span style="color:var(--muted)">(parcial)</span>` : "") : "—"}</td>
+        <td class="n">${valor != null ? brl(valor) : "—"}</td>
         <td class="n ${sav === null ? "" : sav >= 0 ? "pos" : "neg"}">${sav === null ? "—" : brl(sav)}</td>
         <td style="color:var(--muted);font-size:13px">${esc(quando)}</td>
         <td class="acoes"><button class="btn sm" data-act="duplicarQQP" data-id="${x.id}" title="Criar nova revisão a partir desta">Nova revisão</button>
@@ -930,7 +1025,7 @@ function telaModelos(){
     <p class="lead">Cada carteira de insumo usa um modelo, que define as colunas de quantidade e a fórmula do total. Editar um modelo não altera QQPs já criadas.</p>
     <table class="lista modelo-lista"><thead><tr><th>Carteira</th><th>Fórmula do total</th><th>Nível 2</th><th>Unidade</th><th></th></tr></thead><tbody>
     ${S.modelos.map(m => `<tr class="click" data-act="abrirModelo" data-id="${m.id}">
-      <td class="obra">${esc(m.nome)}${ehGranito(m) ? `<span class="tag">área de bancada</span>` : ""}${m.valorGlobal ? `<span class="tag">valor global</span>` : ""}${m.especial ? `<span class="tag">regra especial</span>` : ""}</td>
+      <td class="obra">${esc(m.nome)}${ehGranito(m) ? `<span class="tag">área de bancada</span>` : ""}${m.especial === "portas" ? `<span class="tag">batente de porta</span>` : ""}${m.valorGlobal ? `<span class="tag">valor global</span>` : ""}${m.especial ? `<span class="tag">regra especial</span>` : ""}</td>
       <td><p class="legivel">${esc(formulaLegivel(m))}</p></td>
       <td>${m.usaNivel2 ? esc(m.nivel2Nome) : `<span style="color:var(--faint)">não usa</span>`}</td>
       <td>${esc(m.unidade)}</td>
@@ -941,6 +1036,16 @@ const camposComVirtual = m => [...m.campos, ...(ehGranito(m) ? [{ chave: "area_u
 const chipsCampos = m => camposComVirtual(m).map(c => `<button class="chip" data-act="mIns" data-t="${esc(c.chave)}">${esc(c.nome || c.chave)}</button>`).join("");
 const previaCampos = m => camposComVirtual(m).map(c => `<div class="mini"><label>${esc(c.nome || c.chave)}</label><input data-previa="${esc(c.chave)}" inputmode="decimal" value="${esc(inVal(S.previa[c.chave] ?? 2))}" aria-label="Valor de exemplo para ${esc(c.nome)}"></div>`).join("");
 function previaValores(m){ return Object.fromEntries(camposComVirtual(m).map(c => [c.chave, S.previa[c.chave] ?? 2])); }
+function secaoBatentes(m){
+  if (m.especial !== "portas") return "";
+  return `<section class="secao"><h3>Batentes disponíveis</h3>
+    <p class="lead">Escreva cada batente como largura + regulagem, em cm (ex.: 12+5 atende paredes de 12 a 17 cm). O sistema sugere, em cada porta, o menor batente desta lista que cobre a faixa entre a espessura mínima e a máxima da parede, e avisa quando o batente informado não cobre.</p>
+    <div class="chips">${(m.batentes || []).map((b, bi) => { const p = parseBatente(b);
+      return `<span class="mini" style="flex-direction:row;align-items:center;gap:4px"><input data-mbind="batentes.${bi}" value="${esc(b)}" style="width:80px;text-align:center" aria-label="Batente">
+        <small style="color:var(--muted)">${p ? `${qtdF(p.min)} a ${qtdF(p.max)} cm` : "formato inválido"}</small>
+        <button class="icon del" data-act="mDelBat" data-i="${bi}" aria-label="Excluir batente">✕</button></span>`; }).join("")}</div>
+    <button class="btn sm" data-act="mAddBat">+ Batente</button></section>`;
+}
 function secaoTiposBancada(m){
   if (!ehGranito(m)) return "";
   const ex = { C: 127, L: 50, T: 5, R: 14 };
@@ -972,7 +1077,8 @@ function telaModelo(){
         <div class="field"><label for="mUn">Unidade padrão dos insumos</label><input id="mUn" data-mbind="unidade" value="${esc(m.unidade)}" placeholder="un, m, m², kg"></div>
         <div class="field"><label for="mEsp">Regra especial de cálculo</label><select id="mEsp" data-mesp="1">
           <option value="" ${!m.especial ? "selected" : ""}>Nenhuma (só a fórmula)</option>
-          <option value="granito" ${ehGranito(m) ? "selected" : ""}>Área de bancada</option></select></div>
+          <option value="granito" ${ehGranito(m) ? "selected" : ""}>Área de bancada</option>
+          <option value="portas" ${m.especial === "portas" ? "selected" : ""}>Batente de porta</option></select></div>
         <div class="field"><label for="mN2">Nome do nível 2</label><input id="mN2" data-mbind="nivel2Nome" value="${esc(m.nivel2Nome)}" placeholder="Pavimento, Tipologia, Subsistema" ${m.usaNivel2 ? "" : "disabled"}></div>
       </div>
       <label class="checkline"><input type="checkbox" data-mcheck="usaNivel2" ${m.usaNivel2 ? "checked" : ""}> Usar nível 2 (pavimentos ou outro agrupamento abaixo do agrupador)</label>
@@ -1004,11 +1110,12 @@ function telaModelo(){
       ${m.campos.length ? `<div class="previa"><span id="mPreviaCampos" style="display:contents">${previaCampos(m)}</span>
         <div class="res" id="mPrev">= ${erro ? "—" : qtdF(res)}</div></div>` : ""}
     </section>
-    ${secaoTiposBancada(m)}
+    ${secaoTiposBancada(m)}${secaoBatentes(m)}
     <section class="secao"><h3>Colunas descritivas</h3>
       <p class="lead">Informações do insumo que não entram na conta, como dimensão, acabamento ou cor.</p>
-      <table class="campos"><tbody>${m.descritivas.map((d, di) => `<tr><td><input data-mbind="descritivas.${di}.nome" value="${esc(d.nome)}" aria-label="Nome da coluna descritiva"></td>
-        <td style="width:96px;white-space:nowrap"><button class="icon" data-act="mMovDesc" data-i="${di}" data-d="-1" title="Subir" aria-label="Subir">▲</button><button class="icon" data-act="mMovDesc" data-i="${di}" data-d="1" title="Descer" aria-label="Descer">▼</button><button class="icon del" data-act="mDelDesc" data-i="${di}" aria-label="Excluir coluna">✕</button></td></tr>`).join("")}</tbody></table>
+      <table class="campos"><tbody>${m.descritivas.map((d, di) => { const trava = m.especial === "portas" && d.chave; return `<tr><td><input data-mbind="descritivas.${di}.nome" value="${esc(d.nome)}" aria-label="Nome da coluna descritiva"></td>
+        <td style="width:140px;color:var(--muted);font-size:13px">${trava ? "usada no batente 🔒" : ""}</td>
+        <td style="width:96px;white-space:nowrap"><button class="icon" data-act="mMovDesc" data-i="${di}" data-d="-1" title="Subir" aria-label="Subir">▲</button><button class="icon" data-act="mMovDesc" data-i="${di}" data-d="1" title="Descer" aria-label="Descer">▼</button>${trava ? "" : `<button class="icon del" data-act="mDelDesc" data-i="${di}" aria-label="Excluir coluna">✕</button>`}</td></tr>`; }).join("")}</tbody></table>
       <div style="margin-top:8px"><button class="btn sm" data-act="mAddDesc">+ Coluna descritiva</button></div>
     </section>
   </div></main>`;
@@ -1151,24 +1258,72 @@ function abaComparativo(){
   }
   return `<div class="bar"><div><h2>Comparativo</h2></div><div class="spacer"></div>
       <button class="btn sm" data-act="expandir">Expandir tudo</button><button class="btn sm" data-act="recolher">Recolher ${esc((m.nivel2Nome || "nível 2").toLowerCase())}</button>${filtroFornecedores()}</div>`
-    + ranking(R, F) + `<div class="scroller" id="scComp"><table class="qqp">${cabecalhoComp(q, F)}<tbody>${corpoComp(q, R, F)}</tbody></table></div>`;
+    + ranking(R, F) + `<div class="scroller" id="scComp"><table class="qqp">${cabecalhoComp(q, F)}<tbody>${corpoComp(q, R, F)}</tbody></table></div>`
+    + secaoDecisao(q, R, F);
+}
+function secaoDecisao(q, R, F){
+  const D = R.decisao, todos = q.fornecedores;
+  const insumos = [...R.insumos.values()].filter(x => x.id);
+  if (!insumos.length) return "";
+  const linhas = insumos.map(ins => {
+    const esc_ = D.ins[ins.id];
+    const comp = F.filter(f => ins.total[f.id].falta === 0 && ins.total[f.id].total > 0).map(f => ins.total[f.id].total);
+    const mn = comp.length > 1 ? Math.min(...comp) : null;
+    const orcC = ins.orc ? ins.orc * R.fator : null;
+    return `<tr class="l3"><td class="c0" style="padding-left:12px">${esc(ins.nome)}</td>
+      <td class="n cq">${ins.itens.every(i => i.global) ? "VG" : qtdF(ins.qtd)}</td><td class="un">${esc(ins.un)}</td>
+      ${F.map(f => { const t = ins.total[f.id]; const nada = t.total === 0;
+        const sel = esc_?.fid === f.id; const best = mn !== null && t.falta === 0 && Math.abs(t.total - mn) < 0.005;
+        return `<td class="bl dec-td"><button class="dec-cel ${sel ? "sel" : ""} ${best ? "best" : ""}" data-act="decidir" data-ins="${ins.id}" data-f="${f.id}" aria-pressed="${sel}" ${nada ? "disabled" : ""}
+          title="${nada ? "Não cotado" : sel ? "Clique para desfazer a escolha" : "Comprar este insumo deste fornecedor"}">
+          ${nada ? `<span class="nc">não cotado</span>` : `${brl(t.total)}${t.falta ? `<span class="emb">parcial</span>` : ""}`}</button></td>`; }).join("")}
+      <td class="bl" style="font-weight:600">${esc_ ? esc(todos.find(f => f.id === esc_.fid)?.nome || "") : `<span style="color:var(--faint);font-weight:400">a definir</span>`}${esc_?.falta ? `<span class="emb" style="color:var(--warn)">não cotou ${esc_.falta} linha(s) deste insumo</span>` : ""}</td>
+      <td class="n">${esc_ ? brl(esc_.total) : ""}</td>
+      <td class="n">${orcC ? brl(orcC) : ""}</td></tr>`;
+  }).join("");
+  const resumoForn = Object.entries(D.porForn).map(([fid, x]) => { const f = todos.find(z => z.id === fid);
+    return `<tr><td>${esc(f?.nome || "")}<span class="emb">${x.insumos} insumo(s)${f?.condicaoPagamento ? ` · ${esc(f.condicaoPagamento)}` : ""}${f?.prazoEntrega ? ` · ${esc(f.prazoEntrega)}` : ""}</span></td>
+      <td class="n">${brl(x.sub)}</td><td class="n">${x.ajuste ? (x.ajuste > 0 ? "+" : "−") + brl(Math.abs(x.ajuste)) : "—"}</td><td class="n"><b>${brl(x.total)}</b></td></tr>`; }).join("");
+  const sav = R.orcCorr && D.definidos ? R.orcCorr - D.total : null;
+  return `<section class="decisao">
+    <div class="bar" style="margin-top:22px"><h2 style="margin:0">Decisão de compra</h2><div class="spacer"></div>
+      <button class="btn sm" data-act="decMenor">Preencher com o menor preço</button>${D.definidos ? `<button class="btn sm" data-act="decLimpar">Limpar escolhas</button>` : ""}</div>
+    <p class="lead">Clique no valor do fornecedor de quem vai comprar cada insumo; pode ser uma compra mista. O total soma os insumos escolhidos e aplica o frete, os descontos e os ajustes de cada fornecedor que entrar na compra.</p>
+    <div class="scroller" id="scDec"><table class="qqp"><thead><tr><th class="c0">Insumo</th><th class="cq">Qtd</th><th class="cq">Un.</th>
+      ${F.map(f => `<th class="forn bl">${esc(f.nome || "Sem nome")}</th>`).join("")}<th class="forn bl">Comprar de</th><th>Valor</th><th>Orç. corrigido</th></tr></thead>
+      <tbody>${linhas}</tbody></table></div>
+    <div class="dec-resumo">
+      <table class="dec-forn"><thead><tr><th>Fornecedor na compra</th><th class="n">Subtotal</th><th class="n">Ajustes</th><th class="n">Total</th></tr></thead>
+        <tbody>${resumoForn || `<tr><td colspan="4" style="color:var(--muted)">Nenhum insumo definido ainda.</td></tr>`}</tbody></table>
+      <div class="dec-cards">
+        <div class="dc"><span>Total da compra</span><b>${brl(D.total)}</b>${D.pendentes ? `<small style="color:var(--warn)">${D.pendentes} insumo(s) a definir</small>` : D.definidos ? `<small>todos os insumos definidos</small>` : ""}</div>
+        <div class="dc"><span>Orçamento corrigido</span><b>${R.orcCorr ? brl(R.orcCorr) : "—"}</b>${R.fator !== 1 ? `<small>INCC ${fat(R.fator)}</small>` : ""}</div>
+        <div class="dc ${sav === null ? "" : sav >= 0 ? "ok" : "ruim"}"><span>${sav === null ? "Saving" : sav >= 0 ? "Saving" : "Acima do orçamento"}</span><b>${sav === null ? "—" : brl(Math.abs(sav))}</b>${sav !== null && R.orcCorr ? `<small>${(Math.abs(sav) / R.orcCorr * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}% do orçamento</small>` : ""}</div>
+      </div>
+    </div></section>`;
 }
 function ranking(R, F){
   const lst = F.map(f => ({ f, ...R.final[f.id] })).sort((a, b) => (a.falta - b.falta) || (a.total - b.total));
   if (!lst.length) return "";
-  const max = Math.max(R.orcCorr, ...lst.map(x => x.total), 1) * 1.04;
+  const max = Math.max(R.orcCorr, R.decisao.total, ...lst.map(x => x.total), 1) * 1.04;
   const melhor = lst.find(x => x.falta === 0 && x.total > 0);
+  const D = R.decisao;
+  const linhaDec = D.definidos ? (() => { const sav = R.orcCorr ? R.orcCorr - D.total : null;
+    return `<div class="rk decidida"><div class="nome">Compra definida<small style="color:var(--muted)">${esc(Object.keys(D.porForn).map(id => S.q.fornecedores.find(f => f.id === id)?.nome).join(" + "))}${D.pendentes ? ` · faltam ${D.pendentes} insumo(s)` : ""}</small></div>
+      <div class="trilho"><div class="barra" style="width:${(Math.max(D.total, 0) / max * 100).toFixed(2)}%"></div>${R.orcCorr ? `<div class="marco" style="left:${(R.orcCorr / max * 100).toFixed(2)}%"></div>` : ""}</div>
+      <div class="v">${brl(D.total)}</div><div class="s ${sav === null ? "" : sav >= 0 ? "pos" : "neg"}">${sav === null ? "" : (sav >= 0 ? "Saving " : "Acima ") + brl0(Math.abs(sav))}</div></div>`; })() : "";
   return `<section class="ranking" aria-label="Resumo por fornecedor">
     <div class="head"><h3>Proposta total por fornecedor</h3>
-      <span class="orc">${R.orcCorr ? `Orçamento corrigido ${brl(R.orcCorr)}${R.fator !== 1 ? ` (base ${brl(R.orc)} × INCC ${fat(R.fator)})` : ""}` : "Sem orçamento informado"}${R.inccFaltando ? ` <span style="color:var(--warn)">· mês de INCC sem índice na tabela</span>` : ""}</span></div>
+      <span class="orc" style="flex-basis:100%;order:3">${R.orcCorr ? `Orçamento corrigido ${brl(R.orcCorr)}${R.fator !== 1 ? ` (base ${brl(R.orc)} × INCC ${fat(R.fator)})` : ""}` : "Sem orçamento informado"}${R.inccFaltando ? ` <span style="color:var(--warn)">· mês de INCC sem índice na tabela</span>` : ""}</span></div>
+    ${linhaDec}
     ${lst.map(x => { const sav = R.orcCorr ? R.orcCorr - x.total : null;
       return `<div class="rk ${melhor && x.f.id === melhor.f.id ? "melhor" : ""}">
-        <div class="nome" title="${esc(x.f.nome)}">${esc(x.f.nome || "Sem nome")}${x.falta ? `<small>sem preço em ${x.falta} ${x.falta === 1 ? "item" : "itens"}</small>` : ""}${x.ajuste ? `<small style="color:var(--muted)">ajustes ${x.ajuste > 0 ? "+" : "−"}${brl(Math.abs(x.ajuste))}</small>` : ""}</div>
+        <div class="nome" title="${esc(x.f.nome)}">${esc(x.f.nome || "Sem nome")}${x.falta ? `<small style="color:var(--muted)">parcial: cotou ${R.nItens - x.falta} de ${R.nItens} ${R.nItens === 1 ? "item" : "itens"}</small>` : ""}${x.ajuste ? `<small style="color:var(--muted)">ajustes ${x.ajuste > 0 ? "+" : "−"}${brl(Math.abs(x.ajuste))}</small>` : ""}</div>
         <div class="trilho"><div class="barra" style="width:${(Math.max(x.total, 0) / max * 100).toFixed(2)}%"></div>
           ${R.orcCorr ? `<div class="marco" style="left:${(R.orcCorr / max * 100).toFixed(2)}%" title="Orçamento corrigido"></div>` : ""}</div>
         <div class="v">${brl(x.total)}</div>
-        <div class="s ${x.falta || sav === null ? "" : sav >= 0 ? "pos" : "neg"}">${x.falta ? `<span style="color:var(--warn)">Proposta incompleta</span>` : sav === null ? "" : (sav >= 0 ? "Saving " : "Acima ") + brl0(Math.abs(sav))}</div></div>`; }).join("")}
-    <div class="legenda"><span><i style="background:var(--primary)"></i>Menor proposta completa, com ajustes</span>${R.orcCorr ? `<span><i style="background:var(--ink);width:2px"></i>Orçamento corrigido</span>` : ""}<span><i style="background:var(--best)"></i>Menor preço na linha da tabela</span><span>Linha em cinza: escolhida automaticamente pelo menor preço</span></div>
+        <div class="s ${x.falta || sav === null ? "" : sav >= 0 ? "pos" : "neg"}">${x.falta ? `<span style="color:var(--muted)">Proposta parcial</span>` : sav === null ? "" : (sav >= 0 ? "Saving " : "Acima ") + brl0(Math.abs(sav))}</div></div>`; }).join("")}
+    <div class="legenda">${D.definidos ? `<span><i style="background:var(--green)"></i>Compra definida (pode ser mista)</span>` : ""}<span><i style="background:var(--primary)"></i>Menor proposta completa, com ajustes</span>${R.orcCorr ? `<span><i style="background:var(--ink);width:2px"></i>Orçamento corrigido</span>` : ""}<span><i style="background:var(--best)"></i>Menor preço na linha da tabela</span><span>Linha em cinza: escolhida automaticamente pelo menor preço</span></div>
   </section>`;
 }
 function fichaCurta(f){
@@ -1188,7 +1343,7 @@ function celTotais(tot, F){
   const mn = menorDe(tot, F);
   return F.map(f => { const t = tot[f.id];
     const best = mn !== null && t.falta === 0 && Math.abs(t.total - mn) < 0.005;
-    return `<td class="bl"></td><td></td><td class="n ${best ? "best" : ""} ${t.falta ? "falta" : ""}" title="${t.falta ? `Sem preço em ${t.falta} item(ns)` : ""}">${brl(t.total)}${t.falta ? " *" : ""}</td>`;
+    return `<td class="bl"></td><td></td><td class="n ${best ? "best" : ""}" title="${t.falta ? `Não cotou ${t.falta} item(ns) deste grupo` : ""}">${brl(t.total)}${t.falta ? `<span class="emb">parcial</span>` : ""}</td>`;
   }).join("");
 }
 function selectEscolha(q, it, f, I, dataAttr){
@@ -1235,13 +1390,14 @@ function corpoComp(q, R, F){
       for (const it of p.itens){
         const I = R.itens[it.id], ins = insumoDe(q, it.insumoId), un = unidadeInsumo(q, ins);
         h += `<tr class="l3"><td class="c0" ${m.usaNivel2 ? "" : `style="padding-left:22px"`}>${esc(ins?.nome || "—")}${I.embalagensDiferentes ? `<span class="aviso" title="Fornecedores cotaram em embalagens diferentes. Os preços foram convertidos para ${esc(un)}; confira o conteúdo de cada embalagem.">⚠</span>` : ""}</td>
-          ${D.map(d => `<td class="desc-col" title="${esc(it.desc[d.id])}">${esc(it.desc[d.id])}</td>`).join("")}
+          ${D.map(d => { const ck = d.chave === "batente" ? checarBatente(m, it) : null;
+            return `<td class="desc-col" title="${esc(it.desc[d.id])}">${esc(it.desc[d.id])}${ck && ck.ok === false ? `<span class="aviso" title="${esc(textoBatente(ck))}">⚠</span>` : ""}</td>`; }).join("")}
           ${GR ? `<td class="desc-col" title="${esc(I.partes?.tipo || "")}">${I.partes?.semTipo ? `<span style="color:var(--warn)">sem tipo</span>` : esc(I.partes?.tipo || "")}</td>` : ""}
           ${it.global ? `${C.map(() => `<td></td>`).join("")}<td class="vg" colspan="2">valor global</td>`
             : `${C.map(c => `<td class="n cq">${qtdF(num(I.vars[c.chave]))}</td>`).join("")}<td class="n cq" ${I.nPers ? `title="${esc(it.pers.map(x => `${x.onde || "?"}: ${num(x.qtd) > 0 ? "+" : ""}${qtdF(num(x.qtd))}${x.motivo ? " (" + x.motivo + ")" : ""}`).join("\n"))}"` : ""}><b>${qtdF(I.qtd)}</b>${I.nPers ? `<span class="emb">padrão ${qtdF(I.base)}, pers. ${I.persSoma > 0 ? "+" : I.persSoma < 0 ? "−" : ""}${qtdF(Math.abs(I.persSoma))}</span>` : ""}</td><td class="un">${esc(un)}</td>`}
           ${F.map(f => { const x = I.por[f.id];
             const sel = selectEscolha(q, it, f, I, `data-esc="${it.id}"`);
-            if (!x.o) return `<td class="bl">${sel}</td><td class="sem" colspan="2">${x.none ? "não considerado" : (I.qtd > 0 || it.global) ? "sem preço" : "—"}</td>`;
+            if (!x.o) return `<td class="bl">${sel}</td><td class="sem" colspan="2">${x.none ? "não considerado" : x.n === 0 ? "não cotado" : "—"}</td>`;
             const best = I.min !== null && Math.abs(x.total - I.min) < 0.005;
             const emb = embTexto(x.o, un, it.global);
             const nEmb = !it.global && num(x.o.contem) > 1 ? Math.ceil(I.qtd / num(x.o.contem) - 1e-9) : null;
@@ -1269,7 +1425,7 @@ function corpoComp(q, R, F){
               ${explic.size > 1 ? `<option selected disabled>(varia por linha)</option>` : ""}</select>` : "";
           const o = unica ? q.ofertas.find(x => x.id === unica) : null;
           const nEmb = o && num(o.contem) > 1 ? Math.ceil(ins.qtd / num(o.contem) - 1e-9) : null;
-          return `<td class="bl">${sel}</td><td class="n">${o ? brl(precoUn(o)) : ""}${nEmb ? `<span class="emb">${qtdF(nEmb)} ${esc(o.unidVenda || "unid.")} p/ pedido</span>` : ""}</td><td class="n ${t.falta ? "falta" : ""}">${brl(t.total)}${t.falta ? " *" : ""}</td>`;
+          return `<td class="bl">${sel}</td><td class="n">${o ? brl(precoUn(o)) : ""}${nEmb ? `<span class="emb">${qtdF(nEmb)} ${esc(o.unidVenda || "unid.")} p/ pedido</span>` : ""}</td><td class="n">${brl(t.total)}${t.falta ? `<span class="emb">parcial</span>` : ""}</td>`;
         }).join("")}<td class="bl"></td><td></td></tr>`;
     }
   }
@@ -1277,6 +1433,20 @@ function corpoComp(q, R, F){
 }
 
 /* ----- quantitativos ----- */
+function textoBatente(c){
+  if (!c) return "";
+  const faixa = c.lo === c.hi ? `${qtdF(c.lo)} cm` : `${qtdF(c.lo)} a ${qtdF(c.hi)} cm`;
+  if (c.ok === false) return `A parede (${faixa}) não cabe no batente ${c.atual.txt} (${qtdF(c.atual.min)} a ${qtdF(c.atual.max)} cm).` + (c.sugestao ? ` Sugerido: ${c.sugestao.txt}.` : " Nenhum batente cadastrado cobre essa faixa.");
+  if (c.ok === null && c.sugestao) return `Sugerido para parede de ${faixa}: ${c.sugestao.txt}.`;
+  if (c.ok === null && c.lo != null && !c.sugestao) return `Nenhum batente cadastrado cobre parede de ${faixa}.`;
+  return "";
+}
+function htmlBatente(c, id){
+  if (!c || c.lo == null) return "";
+  if (c.ok === false) return c.sugestao ? `<button class="bat-btn alerta" data-act="usarBatente" data-id="${id}" title="${esc(textoBatente(c))} Clique para usar o sugerido.">⚠ ${esc(c.sugestao.txt)}</button>` : `<span class="aviso" title="${esc(textoBatente(c))}">⚠</span>`;
+  if (c.ok === null) return c.sugestao ? `<button class="bat-btn" data-act="usarBatente" data-id="${id}" title="${esc(textoBatente(c))}">usar ${esc(c.sugestao.txt)}</button>` : `<span class="aviso" title="${esc(textoBatente(c))}">⚠</span>`;
+  return `<span class="bat-ok" title="Batente cobre a parede">✓</span>`;
+}
 function botaoPers(I, id){
   if (!I) return "";
   const n = I.nPers, sm = I.persSoma;
@@ -1319,7 +1489,9 @@ function abaQuantitativos(){
         const base = `grupos.${gi}.n2.${pi}.itens.${ii}`;
         const ins = insumoDe(q, it.insumoId);
         h += `<tr class="l3"><td class="c0" ${m.usaNivel2 ? "" : `style="padding-left:22px"`}><input class="in" list="dlInsumos" data-insumo="${gi}.${pi}.${ii}" value="${esc(ins?.nome || "")}" placeholder="Insumo (ex.: BACIA COM CAIXA ACOPLADA)" aria-label="Insumo"></td>
-          ${D.map(d => `<td><input class="in desc" data-bind="${base}.desc.${d.id}" value="${esc(it.desc[d.id])}" aria-label="${esc(d.nome)}"></td>`).join("")}
+          ${D.map(d => d.chave === "batente" && m.especial === "portas"
+            ? `<td><div class="grp-flex" style="gap:2px"><input class="in desc" style="min-width:70px" data-bind="${base}.desc.${d.id}" data-batin="${it.id}" value="${esc(it.desc[d.id])}" ${(() => { const c = checarBatente(m, it); return c?.sugestao ? `placeholder="${esc(c.sugestao.txt)}"` : ""; })()} aria-label="${esc(d.nome)}"><span data-batchk="${it.id}">${htmlBatente(checarBatente(m, it), it.id)}</span></div></td>`
+            : `<td><input class="in desc" data-bind="${base}.desc.${d.id}" value="${esc(it.desc[d.id])}" aria-label="${esc(d.nome)}"></td>`).join("")}
           ${GR ? `<td><select class="in ${it.tipoBancada ? "" : "vazio-sel"}" data-bind="${base}.tipoBancada" aria-label="Tipo de bancada"><option value="">—</option>${(m.tiposBancada || []).map(t => `<option value="${t.id}" ${t.id === it.tipoBancada ? "selected" : ""}>${esc(t.nome)}</option>`).join("")}</select></td>` : ""}
           ${C.map(c => {
             if (it.global) return `<td class="herd">—</td>`;
@@ -1492,6 +1664,11 @@ function atualizarCalculos(){
   document.querySelectorAll("[data-pu]").forEach(e => { const o = S.q.ofertas[+e.dataset.pu]; if (o){ const ins = R.insumos.get(o.insumoId); e.innerHTML = brl(precoUn(o)) + (num(o.contem) > 1 ? `<small>${qtdF(Math.ceil((ins?.qtd || 0) / num(o.contem) - 1e-9))} ${esc(o.unidVenda || "unid.")} p/ pedido</small>` : ""); } });
   document.querySelectorAll("[data-herd]").forEach(e => { const [pid, k] = e.dataset.herd.split("|"); const p = S.q.grupos.flatMap(g => g.n2).find(x => x.id === pid); if (p) e.textContent = qtdF(num(p.valores[k])); });
   document.querySelectorAll("[data-herdph]").forEach(e => { const [pid, k] = e.dataset.herdph.split("|"); const p = S.q.grupos.flatMap(g => g.n2).find(x => x.id === pid); const v = p?.valores[k]; e.placeholder = v != null && v !== "" ? inVal(v) : ""; });
+  if (S.q.modelo.especial === "portas") document.querySelectorAll("[data-batchk]").forEach(e => {
+    const it = todosItens(S.q).find(x => x.id === e.dataset.batchk); if (!it) return;
+    const c = checarBatente(S.q.modelo, it); e.innerHTML = htmlBatente(c, it.id);
+    const inp = document.querySelector(`[data-batin="${it.id}"]`); if (inp) inp.placeholder = c?.sugestao ? c.sugestao.txt : "";
+  });
   const f = document.getElementById("fator"); if (f) f.textContent = fat(R.fator);
 }
 function haAlteracoes(){ return (S.view === "qqp" && S.dirty) || (S.view === "modelo" && S.modeloDirty) || (S.view === "incc" && S.inccDirty) || (S.view === "obra" && S.obraDirty); }
@@ -1576,6 +1753,7 @@ app.addEventListener("change", e => {
   if (S.view === "modelo"){
     if (d.mesp){
       const m = S.modeloEdit;
+      if (t.value === "portas"){ aplicarRegraPortas(m); toast("Regra de batente ativada: colunas de batente e espessuras adicionadas.", 4000); S.modeloDirty = true; render(); return; }
       if (t.value === "granito"){
         m.especial = "granito";
         if (!m.campos.some(c => c.chave === "repeticoes")) m.campos.unshift(campo("Repetições", "item", "", "repeticoes"));
@@ -1588,7 +1766,7 @@ app.addEventListener("change", e => {
         if (!m.unidade || m.unidade === "un") m.unidade = "m²";
         toast("Regra de área de bancada ativada: colunas de medidas e tipos de bancada adicionados.", 4000);
       } else {
-        delete m.especial;
+        delete m.especial; m.descritivas.forEach(x => delete x.chave);
         if (/\barea_unit\b/.test(m.formula || "")) toast("A fórmula ainda usa a área unitária, que só existe com a regra de bancada. Ajuste a fórmula.", 5000);
       }
       S.modeloDirty = true; render(); return;
@@ -1687,6 +1865,10 @@ async function executar(a, d, e){
     case "mAddCampo": { const c = { id: uid(), chave: "", nome: "", nivel: "item", unidade: "", _novo: true }; c.chave = chaveUnica("coluna", S.modeloEdit.campos, c); S.modeloEdit.campos.push(c); S.modeloDirty = true; render(); document.querySelectorAll('[data-mbind$=".nome"][data-mbind^="campos."]').forEach((el, i, all) => { if (i === all.length - 1) el.focus(); }); break; }
     case "mDelCampo": { const c = S.modeloEdit.campos[ii]; if (chaveTravada(S.modeloEdit, c)) return; if (new RegExp(`\\b${c.chave}\\b`).test(S.modeloEdit.formula) && !confirm(`A coluna "${c.nome}" está na fórmula. Excluir mesmo assim?`)) return; S.modeloEdit.campos.splice(ii, 1); S.modeloDirty = true; render(); break; }
     case "mAddDesc": S.modeloEdit.descritivas.push({ id: uid(), nome: "" }); S.modeloDirty = true; render(); break;
+    case "mAddBat": (S.modeloEdit.batentes ??= []).push(""); S.modeloDirty = true; render(); { const els = document.querySelectorAll('[data-mbind^="batentes."]'); els[els.length - 1]?.focus(); } break;
+    case "mDelBat": S.modeloEdit.batentes.splice(ii, 1); S.modeloDirty = true; render(); break;
+    case "usarBatente": { const it = todosItens(q).find(x => x.id === d.id); const c = checarBatente(q.modelo, it); const dd = q.modelo.descritivas.find(x => x.chave === "batente");
+      if (it && c?.sugestao && dd){ it.desc[dd.id] = c.sugestao.txt; mudou(); } break; }
     case "mDelDesc": S.modeloEdit.descritivas.splice(ii, 1); S.modeloDirty = true; render(); break;
     case "mIns": {
       const m = S.modeloEdit; const pos = S.caret ?? m.formula.length;
@@ -1711,6 +1893,7 @@ async function executar(a, d, e){
       try { compilar(m.formula, chavesDe(m)); } catch (ex){ return alert("A fórmula tem um problema: " + ex.message); }
       if (ehGranito(m) && (m.tiposBancada || []).some(t => !String(t.nome || "").trim())) return alert("Todos os tipos de bancada precisam de nome.");
       if (S.modelos.some(x => x.id !== m.id && chave(x.nome) === chave(m.nome))) return alert("Já existe um modelo com esse nome.");
+      if (m.especial === "portas"){ m.batentes = (m.batentes || []).map(x => String(x).trim()).filter(Boolean); const ruim = m.batentes.find(x => !parseBatente(x)); if (ruim) return alert(`O batente "${ruim}" não está no formato largura+regulagem (ex.: 12+5).`); }
       const limpo = clone(m); delete limpo._novo; limpo.campos.forEach(c => delete c._novo);
       const anterior = modeloPorId(m.id); const renN2 = {};
       if (anterior) limpo.campos.filter(c => c.nivel === "n2").forEach(c => { const a = anterior.campos.find(x => x.id === c.id); if (a && a.chave !== c.chave) renN2[a.chave] = c.chave; });
@@ -1748,6 +1931,18 @@ async function executar(a, d, e){
     case "toggle": S.fechados.has(d.id) ? S.fechados.delete(d.id) : S.fechados.add(d.id); renderAba(); break;
     case "expandir": S.fechados.clear(); renderAba(); break;
     case "recolher": q.grupos.forEach(g => g.n2.forEach(p => S.fechados.add(p.id))); renderAba(); break;
+    case "decidir": { if (q.decisao[d.ins] === d.f) delete q.decisao[d.ins]; else q.decisao[d.ins] = d.f; mudou(); break; }
+    case "decMenor": {
+      const R = calc(q); const F = fornVisiveis(q); let n = 0;
+      for (const ins of R.insumos.values()){
+        if (!ins.id) continue;
+        let cand = F.filter(f => ins.total[f.id].falta === 0 && ins.total[f.id].total > 0);
+        if (!cand.length) cand = F.filter(f => ins.total[f.id].total > 0);
+        if (!cand.length) continue;
+        q.decisao[ins.id] = cand.reduce((a, b) => ins.total[b.id].total < ins.total[a.id].total ? b : a).id; n++;
+      }
+      mudou(); toast(`${n} insumo(s) definidos pelo menor preço. Ajuste clicando nos valores.`, 3500); break; }
+    case "decLimpar": if (!confirm("Limpar todas as escolhas da decisão de compra?")) return; q.decisao = {}; mudou(); break;
     case "filtroTodos": S.ocultos.clear(); renderAba(); break;
     case "addGrupo": q.grupos.push({ id: uid(), nome: "", orcamento: null, n2: [{ id: uid(), nome: "", valores: {}, itens: [] }] }); mudou(); focarUltimo('[data-bind^="grupos."][data-bind$=".nome"]:not([data-bind*=".n2."])'); break;
     case "addN2": { const g = q.grupos[gi]; const ant = g.n2[g.n2.length - 1];
@@ -1767,6 +1962,7 @@ async function executar(a, d, e){
     case "delF": { const f = q.fornecedores[+d.f];
       if (!confirm(`Excluir o fornecedor "${f.nome || "sem nome"}" e todas as linhas cotadas por ele?`)) return;
       q.fornecedores.splice(+d.f, 1); q.ofertas = q.ofertas.filter(o => o.fornId !== f.id);
+      for (const k of Object.keys(q.decisao)) if (q.decisao[k] === f.id) delete q.decisao[k];
       todosItens(q).forEach(i => delete i.escolhas[f.id]); S.ocultos.delete(f.id); mudou(); break; }
     case "movF": moveArr(q.fornecedores, +d.f, +d.d); mudou(); break;
     case "addAj": q.fornecedores[+d.f].ajustes.outros.push({ desc: "", valor: null }); mudou(); break;
@@ -1779,7 +1975,7 @@ async function executar(a, d, e){
       mudou(); const idx = q.ofertas.findIndex(o => o.insumoId === ins.id && o.fornId === fid && !o.linha && o.preco == null);
       const el = document.querySelector(`[data-bind="ofertas.${idx}.linha"]`); if (el) el.focus(); break; }
     case "delOf": { const o = q.ofertas[+d.o]; q.ofertas.splice(+d.o, 1); todosItens(q).forEach(i => { if (i.escolhas[o.fornId] === o.id) delete i.escolhas[o.fornId]; }); mudou(); break; }
-    case "delIns": q.insumos.splice(+d.k, 1); q.ofertas = q.ofertas.filter(o => q.insumos.some(i => i.id === o.insumoId)); mudou(); break;
+    case "delIns": delete q.decisao[q.insumos[+d.k]?.id]; q.insumos.splice(+d.k, 1); q.ofertas = q.ofertas.filter(o => q.insumos.some(i => i.id === o.insumoId)); mudou(); break;
     case "colarOfertas": modalColarOfertas(); break;
     case "trazerModelo": {
       const m = modeloPorId(q.modeloId) || S.modelos.find(x => chave(x.nome) === chave(q.pacote));
@@ -1989,6 +2185,14 @@ function exportarExcel(){
   }
   L.push([]); L.push(["", "RESUMO POR INSUMO", ...pre(nFix - 2)]);
   for (const ins of R.insumos.values()) L.push(["", ins.nome, ...pre(D.length + (GR ? 1 : 0) + C.length), ins.qtd, ins.un, ...tots(ins.total)]);
+  if (R.decisao.definidos){
+    L.push([]); L.push(["", "DECISÃO DE COMPRA", "COMPRAR DE", "VALOR"]);
+    for (const ins of R.insumos.values()){ if (!ins.id) continue; const x = R.decisao.ins[ins.id]; L.push(["", ins.nome, x ? (F.find(f => f.id === x.fid)?.nome || "") : "A DEFINIR", x ? x.total : ""]); }
+    L.push(["", "FORNECEDOR NA COMPRA", "INSUMOS", "AJUSTES", "TOTAL"]);
+    for (const [fid, x] of Object.entries(R.decisao.porForn)) L.push(["", F.find(f => f.id === fid)?.nome || "", x.sub, x.ajuste, x.total]);
+    L.push(["", "TOTAL DA COMPRA", "", "", R.decisao.total]);
+    if (R.orcCorr) L.push(["", R.orcCorr - R.decisao.total >= 0 ? "SAVING" : "ACIMA DO ORÇAMENTO", "", "", Math.abs(R.orcCorr - R.decisao.total)]);
+  }
   L.push([]); L.push(["", "FORNECEDOR", "PRAZO DE ENTREGA", "PAGAMENTO", "FRETE", "VALIDADE", "CONTATO", "TELEFONE", "E-MAIL", "OBSERVAÇÕES"]);
   F.forEach(f => L.push(["", f.nome, f.prazoEntrega || "", f.condicaoPagamento || "", f.frete || "", dataBR(f.validade), f.contato || "", f.telefone || "", f.email || "", f.obs || ""]));
   const ws = XLSX.utils.aoa_to_sheet(L);
