@@ -496,7 +496,7 @@ details.filtro label:hover{background:var(--sand)}
 <body>
 <div id="app"><div class="carregando">Carregando…</div></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <script type="module">
 /* =========================================================================
    QQP · Quadro de quantitativos e preços — Suprimentos
@@ -1535,8 +1535,12 @@ function abaFornecedores(){
         <button class="icon" data-act="movF" data-f="${fi}" data-d="1" title="Mover coluna para a direita" aria-label="Mover para a direita">▶</button>
         <button class="icon del" data-act="delF" data-f="${fi}" title="Excluir fornecedor" aria-label="Excluir fornecedor">✕</button></div>
       <div class="grid2">
+        <div class="mini full"><label>CNPJ</label><input data-bind="fornecedores.${fi}.cnpj" value="${esc(f.cnpj)}" placeholder="00.000.000/0000-00"></div>
         <div class="mini"><label>Prazo de entrega</label><input data-bind="fornecedores.${fi}.prazoEntrega" value="${esc(f.prazoEntrega)}" placeholder="Ex.: 15 dias após pedido"></div>
         <div class="mini"><label>Condição de pagamento</label><input data-bind="fornecedores.${fi}.condicaoPagamento" value="${esc(f.condicaoPagamento)}" placeholder="Ex.: 30% + 3x"></div>
+        <div class="mini"><label>Entrada (% no pedido)</label><input data-bind="fornecedores.${fi}.entradaPct" data-tipo="num" inputmode="decimal" value="${esc(inVal(f.entradaPct))}" placeholder="Ex.: 30"></div>
+        <div class="mini"><label>Parcelas (dias)</label><input data-bind="fornecedores.${fi}.parcelas" value="${esc(f.parcelas)}" placeholder="Ex.: 30 60 90"></div>
+        <div class="mini"><label>Parcelas contadas do</label><select data-bind="fornecedores.${fi}.parcelasBase"><option value="">—</option>${["pedido", "entrega"].map(x => `<option ${f.parcelasBase === x ? "selected" : ""}>${x}</option>`).join("")}</select></div>
         <div class="mini"><label>Frete</label><select data-bind="fornecedores.${fi}.frete"><option value="">—</option>${["CIF", "FOB"].map(x => `<option ${f.frete === x ? "selected" : ""}>${x}</option>`).join("")}</select></div>
         <div class="mini"><label>Validade da proposta</label><input type="date" data-bind="fornecedores.${fi}.validade" value="${esc(f.validade)}"></div>
         <div class="mini"><label>Contato</label><input data-bind="fornecedores.${fi}.contato" value="${esc(f.contato)}" placeholder="Nome do vendedor"></div>
@@ -1567,6 +1571,7 @@ function abaFornecedores(){
     let ultimoF = null;
     return `<div class="insumo-bloco">
       <div class="cab"><input class="nome" data-bind="insumos.${ki}.nome" value="${esc(ins.nome)}" aria-label="Nome do insumo">
+        <span class="info">Cód. Sienge <input class="un" style="width:80px" data-bind="insumos.${ki}.codigo" value="${esc(ins.codigo || "")}" aria-label="Código Sienge"></span>
         <span class="info">Unidade <input class="un" data-bind="insumos.${ki}.unidade" value="${esc(ins.unidade || "")}" placeholder="${esc(q.modelo.unidade || "un")}" aria-label="Unidade do insumo"></span>
         <span class="info">Qtd total <b>${qtdF(qtd)} ${esc(un)}</b></span>
         ${usados.has(ins.id) ? "" : `<span class="info" style="color:var(--warn)">sem uso nos quantitativos</span><button class="icon del" data-act="delIns" data-k="${ki}" aria-label="Excluir insumo">✕</button>`}</div>
@@ -1608,7 +1613,14 @@ function abaDados(){
     <div class="form-grid">
       <div class="field"><label for="dPac">Carteira de insumo</label><input id="dPac" data-bind="pacote" value="${esc(q.pacote)}"></div>
       <div class="field"><label for="dRev">Revisão</label><input id="dRev" data-bind="revisao" value="${esc(q.revisao)}" placeholder="R00"></div>
-      <div class="field"><label for="dData">Data</label><input id="dData" type="date" data-bind="data" value="${esc(q.data)}"></div>
+      <div class="field"><label for="dData">Data das propostas</label><input id="dData" type="date" data-bind="data" value="${esc(q.data)}"></div>
+    </div>
+    <h3 style="margin-bottom:8px">Para o mapa de cotação</h3>
+    <div class="form-grid">
+      <div class="field"><label for="dCod">Código da compra programada</label><input id="dCod" data-bind="codigoCompra" value="${esc(q.codigoCompra)}" placeholder="Ex.: 3.6.1"></div>
+      <div class="field"><label for="dComp">Comprador</label><input id="dComp" data-bind="comprador" value="${esc(q.comprador)}"></div>
+      <div class="field"><label for="dAte">Comprar até</label><input id="dAte" type="date" data-bind="comprarAte" value="${esc(q.comprarAte)}"></div>
+      <div class="field"><label for="dCock">ID cockpit</label><input id="dCock" data-bind="idCockpit" value="${esc(q.idCockpit)}"></div>
     </div>
     <h3 style="margin-bottom:8px">Correção do orçamento pelo INCC</h3>
     <div class="form-grid">
@@ -2147,9 +2159,119 @@ function modalColarOfertas(){
 }
 
 /* ---------------- exportar Excel ---------------- */
-function exportarExcel(){
-  if (!window.XLSX){ alert("A biblioteca de exportação não carregou. Verifique a conexão e recarregue a página."); return; }
-  const q = S.q, F = q.fornecedores, R = calc(q), m = q.modelo, D = m.descritivas, C = m.campos, o = obraAtual();
+/* ---------------- exportar Excel (Mapa de cotação POP.02 + detalhamento) ---------------- */
+function colL(n){ let s = ""; while (n > 0){ const r = (n - 1) % 26; s = String.fromCharCode(65 + r) + s; n = Math.floor((n - 1) / 26); } return s; }
+function dataISOparaDate(iso){ if (!iso) return null; const [y, mo, d] = iso.split("-").map(Number); return new Date(Date.UTC(y, mo - 1, d)); }
+function montarMapa(wb, q, R, F, o){
+  const ws = wb.addWorksheet("Mapa", { views: [{ state: "frozen", xSplit: 2, ySplit: 12, zoomScale: 90 }] });
+  const AMARELO = "FFFFF4CC", AZUL = "FFDCE6F5", CINZA = "FFEDEFF2";
+  const BRL = '"R$" #,##0.00', PCT = "+0.0%;-0.0%";
+  const fino = { style: "thin" }, BORDA = { top: fino, left: fino, bottom: fino, right: fino };
+  const fill = c => ({ type: "pattern", pattern: "solid", fgColor: { argb: c } });
+  const fonte = (extra = {}) => ({ name: "Calibri", size: 11, ...extra });
+  const NF = Math.max(5, F.length);
+  const ins = [...R.insumos.values()].filter(x => x.id);
+  const n = Math.max(ins.length, 1);
+  const r0 = 13, rl = 12 + n, rt = rl + 1, rc = rt + 2;
+  const cU = k => 10 + 2 * k, cT = k => 11 + 2 * k, ultima = 9 + 2 * NF;
+  const set = (addr, value, st = {}) => { const c = ws.getCell(addr); if (value !== undefined && value !== null && value !== "") c.value = value; c.font = fonte(st.font || {}); if (st.fill) c.fill = fill(st.fill); if (st.borda) c.border = BORDA; if (st.fmt) c.numFmt = st.fmt; if (st.al) c.alignment = st.al; return c; };
+  const juntar = (r, c1, c2, value, st) => { for (let c = c1; c <= c2; c++) set(`${colL(c)}${r}`, c === c1 ? value : undefined, st); ws.mergeCells(`${colL(c1)}${r}:${colL(c2)}${r}`); };
+  // larguras
+  [12, 46, 6, 11, 11, 12, 14, 13, 10].forEach((w, i) => ws.getColumn(i + 1).width = w);
+  for (let k = 0; k < NF; k++){ ws.getColumn(cU(k)).width = 13; ws.getColumn(cT(k)).width = 15; }
+  // cabeçalho
+  set("A1", "MAPA DE COTAÇÃO · padrão Unique (POP.02)", { font: { bold: true, size: 14 } });
+  set("A2", "Preencha só as células amarelas. Proposta por item: preço unitário em cada linha. Proposta só com valor global: deixe os preços em branco (aparece \"-\") e preencha o Total global nas condições. Não mude rótulos nem a ordem.", { font: { italic: true, color: { argb: "FF666666" } } });
+  const comp = [q.codigoCompra, (q.pacote || "").toUpperCase()].filter(Boolean).join(" · ") + (q.revisao ? ` · ${q.revisao}` : "");
+  const cab = [["Obra", o?.nome || "", {}], ["Compra programada", comp, {}], ["Comprador", q.comprador || "", { fill: AMARELO }],
+    ["Data das propostas", dataISOparaDate(q.data), { fill: AMARELO, fmt: "DD/MM/YYYY" }], ["Comprar até", dataISOparaDate(q.comprarAte), { fmt: "DD/MM/YYYY" }], ["ID cockpit", q.idCockpit || "", {}]];
+  cab.forEach(([rot, v, st], i) => { set(`A${4 + i}`, rot, { font: { bold: true } }); set(`B${4 + i}`, v, { ...st, borda: true }); });
+  // títulos das colunas
+  set("A11", "ITENS", { font: { bold: true, size: 12 } });
+  const rForn = rc + 1;
+  for (let k = 0; k < NF; k++) juntar(11, cU(k), cT(k), { formula: `IF(${colL(cU(k))}${rForn}="","Fornecedor ${k + 1}",${colL(cU(k))}${rForn})` }, { font: { bold: true }, fill: AZUL, al: { horizontal: "center" } });
+  ["Código Sienge", "Insumo", "Un", "Qtd ONT", "Qtd cotada", "Preço ONT", "Total ONT", "Menor preço unit.", "Menor × ONT"].forEach((t, i) =>
+    set(`${colL(i + 1)}12`, t, { font: { bold: true }, fill: CINZA, borda: true, al: { vertical: "middle", wrapText: true } }));
+  for (let k = 0; k < NF; k++){ set(`${colL(cU(k))}12`, "Preço unit.", { font: { bold: true }, fill: AZUL, borda: true }); set(`${colL(cT(k))}12`, "Total", { font: { bold: true }, fill: AZUL, borda: true }); }
+  ws.getRow(12).height = 30;
+  // itens
+  const unitCols = r => Array.from({ length: NF }, (_, k) => `${colL(cU(k))}${r}`).join(",");
+  for (let i = 0; i < n; i++){
+    const r = r0 + i, x = ins[i];
+    const qtd = x ? (x.itens.every(it => it.global) ? 1 : x.qtd) : null;
+    const precoOnt = x && x.orc ? (x.orc * R.fator) / (qtd || 1) : null;
+    set(`A${r}`, x ? (insumoDe(q, x.id)?.codigo || "") : "", { borda: true });
+    set(`B${r}`, x ? x.nome : "", { borda: true });
+    set(`C${r}`, x ? x.un : "", { borda: true });
+    set(`D${r}`, qtd, { borda: true });
+    set(`E${r}`, qtd, { borda: true, fill: AMARELO });
+    set(`F${r}`, precoOnt, { borda: true, fmt: BRL });
+    set(`G${r}`, { formula: `D${r}*F${r}` }, { borda: true, fmt: BRL });
+    set(`H${r}`, { formula: `IF(COUNT(${unitCols(r)})=0,"-",MIN(${unitCols(r)}))` }, { borda: true, fmt: BRL });
+    set(`I${r}`, { formula: `IF(OR(H${r}="-",N(F${r})=0),"-",H${r}/F${r}-1)` }, { borda: true, fmt: PCT });
+    for (let k = 0; k < NF; k++){
+      const f = F[k]; let unit = null;
+      if (x && f){ const t = x.total[f.id]; if (t.total > 0){ const coberta = x.itens.reduce((s, it) => s + (R.itens[it.id].por[f.id]?.o ? (it.global ? 1 : R.itens[it.id].qtd) : 0), 0); unit = coberta ? t.total / coberta : null; } }
+      const U = colL(cU(k));
+      set(`${U}${r}`, unit, { borda: true, fill: AMARELO, fmt: BRL });
+      set(`${colL(cT(k))}${r}`, { formula: `IF(${U}${r}="","-",E${r}*${U}${r})` }, { borda: true, fmt: BRL, al: { horizontal: "right" } });
+    }
+  }
+  // total dos itens (orçamento lançado por agrupador entra no Total ONT)
+  const orcGrupos = q.grupos.reduce((s, g) => s + num(g.orcamento), 0) * R.fator;
+  set(`B${rt}`, "Total dos itens", { font: { bold: true } });
+  const g = set(`G${rt}`, { formula: `SUM(G${r0}:G${rl})${orcGrupos ? `+${orcGrupos.toFixed(2)}` : ""}` }, { font: { bold: true }, fmt: BRL });
+  if (orcGrupos) g.note = `Inclui ${brl(orcGrupos)} de orçamento lançado por agrupador no QQP (já corrigido pelo INCC), que não tem preço por insumo.`;
+  for (let k = 0; k < NF; k++){ const U = colL(cU(k)), T = colL(cT(k));
+    set(`${T}${rt}`, { formula: `IF(COUNT(${U}${r0}:${U}${rl})=0,"-",SUM(${T}${r0}:${T}${rl}))` }, { font: { bold: true }, fmt: BRL, al: { horizontal: "right" } }); }
+  // condições
+  set(`A${rc}`, "CONDIÇÕES", { font: { bold: true, size: 12 } });
+  const rotulos = ["Fornecedor", "CNPJ", "Frete (CIF / FOB)", "Valor do frete (FOB)", "Total global (se a proposta não veio por item)", "Condição de pagamento", "Entrada (% do total, no pedido)",
+    "Parcelas: dias de cada uma (ex.: 30 60 90)", "Dias das parcelas contados do (pedido / entrega)", "Prazo de entrega (dias)", "Validade da proposta", "Itens não cotados", "Observações (marca, impostos…)"];
+  rotulos.forEach((t, i) => set(`B${rc + 1 + i}`, t, { font: { bold: true } }));
+  for (let k = 0; k < NF; k++){
+    const f = F[k];
+    const naoCotados = f ? ins.filter(x => x.total[f.id].total === 0).map(x => x.nome) : [];
+    const a = f?.ajustes || {};
+    const ajustesTxt = f ? [num(a.descontoPct) ? `desconto de ${inVal(num(a.descontoPct))}%` : "", num(a.descontoValor) ? `desconto de ${brl(num(a.descontoValor))}` : "",
+      ...(a.outros || []).filter(x => num(x.valor)).map(x => `${x.desc || "ajuste"} ${num(x.valor) > 0 ? "+" : "−"}${brl(Math.abs(num(x.valor)))}`)].filter(Boolean) : [];
+    const obs = f ? [f.obs, ajustesTxt.length ? `Ajustes do QQP não incluídos no total equalizado: ${ajustesTxt.join("; ")}` : ""].filter(Boolean).join(". ") : "";
+    const vals = f ? [f.nome || "", f.cnpj || "", f.frete || "", num(a.frete) || null, null, f.condicaoPagamento || "", num(f.entradaPct) || null, f.parcelas || "", f.parcelasBase || "",
+      f.prazoEntrega || "", dataISOparaDate(f.validade), naoCotados.join("; "), obs] : Array(13).fill(null);
+    const fmts = [null, null, null, BRL, BRL, null, null, null, null, null, "DD/MM/YYYY", null, null];
+    vals.forEach((v, i) => juntar(rc + 1 + i, cU(k), cT(k), v, { fill: AMARELO, borda: true, fmt: fmts[i] || undefined, al: { wrapText: true, vertical: "top" } }));
+    ws.getCell(`${colL(cU(k))}${rc + 3}`).dataValidation = { type: "list", allowBlank: true, formulae: ['"CIF,FOB"'] };
+    ws.getCell(`${colL(cU(k))}${rc + 9}`).dataValidation = { type: "list", allowBlank: true, formulae: ['"pedido,entrega"'] };
+    const U = colL(cU(k)), T = colL(cT(k)), rEq = rc + 14;
+    juntar(rEq, cU(k), cT(k), { formula: `IF(AND(${T}${rt}="-",${U}${rc + 5}=""),"",IF(${T}${rt}="-",${U}${rc + 5},${T}${rt})+N(${U}${rc + 4}))` }, { font: { bold: true }, fill: AZUL, fmt: BRL });
+    juntar(rEq + 1, cU(k), cT(k), { formula: `IF(OR(${U}${rEq}="",N($G$${rt})=0),"",${U}${rEq}/$G$${rt}-1)` }, { fmt: PCT });
+    juntar(rEq + 2, cU(k), cT(k), { formula: `IF(${U}${rForn}="","",IF(COUNT(${U}${r0}:${U}${rl})=0,"- (só global)",COUNT(${U}${r0}:${U}${rl})&" de ${n}"))` }, {});
+  }
+  set(`B${rc + 14}`, "Total equalizado (itens ou global + frete)", { font: { bold: true } });
+  set(`B${rc + 15}`, "× ONT"); set(`B${rc + 16}`, "Itens com preço");
+  // recomendação
+  const rr = rc + 18, D = R.decisao;
+  set(`A${rr}`, "RECOMENDAÇÃO DO SUPRIMENTOS", { font: { bold: true, size: 12 } });
+  set(`B${rr + 1}`, "Fornecedor recomendado", { font: { bold: true } });
+  set(`B${rr + 2}`, "Por quê (preço, prazo, pagamento, histórico)", { font: { bold: true } });
+  let rec = "", porque = "";
+  if (D.definidos){
+    const nomes = Object.keys(D.porForn).map(id => F.find(f => f.id === id)?.nome || "");
+    rec = nomes.length === 1 ? nomes[0] : `Compra mista: ${nomes.join(" + ")}`;
+    const partes = [];
+    if (nomes.length > 1) partes.push(ins.filter(x => D.ins[x.id]).map(x => `${x.nome} → ${F.find(f => f.id === D.ins[x.id].fid)?.nome}`).join("; "));
+    partes.push(`Total da compra ${brl(D.total)} (com frete e ajustes de cada fornecedor)`);
+    if (R.orcCorr) partes.push(`${R.orcCorr - D.total >= 0 ? "saving" : "acima do orçamento em"} ${brl(Math.abs(R.orcCorr - D.total))} (${(Math.abs(R.orcCorr - D.total) / R.orcCorr * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%) sobre o orçamento corrigido`);
+    if (D.pendentes) partes.push(`${D.pendentes} insumo(s) ainda sem fornecedor definido`);
+    porque = partes.join(". ") + ".";
+  }
+  juntar(rr + 1, 3, ultima, rec, { fill: AMARELO, borda: true });
+  ws.getCell(`C${rr + 1}`).dataValidation = { type: "list", allowBlank: true, formulae: [`$${colL(cU(0))}$${rForn}:$${colL(cT(NF - 1))}$${rForn}`] };
+  juntar(rr + 2, 3, ultima, porque, { fill: AMARELO, borda: true, al: { wrapText: true, vertical: "top" } });
+  if (porque.length > 120) ws.getRow(rr + 2).height = Math.min(15 * Math.ceil(porque.length / 150), 120);
+}
+function montarDetalhado(wb, q, R, F, o){
+  const m = q.modelo, D = m.descritivas, C = m.campos;
   const L = [];
   const pre = n => Array(n).fill("");
   L.push([`QUADRO DE QUANTIDADES E PREÇO - ${(q.pacote || "").toUpperCase()}`]);
@@ -2195,16 +2317,27 @@ function exportarExcel(){
   }
   L.push([]); L.push(["", "FORNECEDOR", "PRAZO DE ENTREGA", "PAGAMENTO", "FRETE", "VALIDADE", "CONTATO", "TELEFONE", "E-MAIL", "OBSERVAÇÕES"]);
   F.forEach(f => L.push(["", f.nome, f.prazoEntrega || "", f.condicaoPagamento || "", f.frete || "", dataBR(f.validade), f.contato || "", f.telefone || "", f.email || "", f.obs || ""]));
-  const ws = XLSX.utils.aoa_to_sheet(L);
-  ws["!cols"] = [{wch:4},{wch:44}, ...D.map(() => ({wch:16})), ...(GR ? [{wch:24}] : []), ...C.map(() => ({wch:11})), {wch:10},{wch:6}, ...F.flatMap(() => [{wch:26},{wch:18},{wch:12},{wch:14}]), {wch:14},{wch:14}];
-  ws["!merges"] = F.map((f, k) => ({ s:{ r: hdrRow, c: nFix + k * 4 }, e:{ r: hdrRow, c: nFix + k * 4 + 3 } }));
-  for (const addr in ws){ if (addr[0] === "!") continue; const c = ws[addr]; if (c.t === "n") c.z = "#,##0.00"; }
-  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "COMPARATIVO");
+  const ws = wb.addWorksheet("QQP detalhado", { views: [{ state: "frozen", ySplit: hdrRow + 2, zoomScale: 90 }] });
+  ws.addRows(L);
+  [4, 44, ...D.map(() => 16), ...(GR ? [24] : []), ...C.map(() => 11), 10, 6, ...F.flatMap(() => [26, 18, 12, 14]), 14, 14].forEach((w, i) => ws.getColumn(i + 1).width = w);
+  F.forEach((f, k) => ws.mergeCells(hdrRow + 1, nFix + k * 4 + 1, hdrRow + 1, nFix + k * 4 + 4));
+  ws.eachRow(row => row.eachCell(c => { if (typeof c.value === "number") c.numFmt = "#,##0.00"; }));
+  ws.getRow(1).font = { bold: true, size: 13 };
+  [hdrRow + 1, hdrRow + 2].forEach(r => { const row = ws.getRow(r); row.font = { bold: true }; row.eachCell(c => c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEDEFF2" } }); });
   const P = [["AGRUPADOR", m.usaNivel2 ? m.nivel2Nome.toUpperCase() : "", rotuloInsumo(m).toUpperCase(), "ONDE", "QTD (+/−)", "MOTIVO"]];
   q.grupos.forEach(g => g.n2.forEach(p => p.itens.forEach(it => (it.pers || []).forEach(x => P.push([g.nome, p.nome, insumoDe(q, it.insumoId)?.nome || "", x.onde || "", num(x.qtd), x.motivo || ""])))));
-  if (P.length > 1){ const wp = XLSX.utils.aoa_to_sheet(P); wp["!cols"] = [{wch:16},{wch:30},{wch:36},{wch:16},{wch:10},{wch:40}]; XLSX.utils.book_append_sheet(wb, wp, "PERSONALIZACOES"); }
-  const nome = `QQP_${q.pacote}_${q.revisao}_${o?.nome || ""}`.replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, "_");
-  XLSX.writeFile(wb, nome + ".xlsx");
+  if (P.length > 1){ const wp = wb.addWorksheet("Personalizações"); wp.addRows(P); wp.getRow(1).font = { bold: true }; [16, 30, 36, 16, 10, 40].forEach((w, i) => wp.getColumn(i + 1).width = w); }
+}
+async function exportarExcel(){
+  if (!window.ExcelJS){ alert("A biblioteca de exportação não carregou. Verifique a conexão e recarregue a página."); return; }
+  const q = S.q, F = q.fornecedores, R = calc(q), o = obraAtual();
+  const wb = new ExcelJS.Workbook(); wb.creator = "QQP · UQ-HUB"; wb.calcProperties.fullCalcOnLoad = true;
+  try { montarMapa(wb, q, R, F, o); montarDetalhado(wb, q, R, F, o); }
+  catch (ex){ console.error(ex); return alert("Não foi possível montar o Excel: " + ex.message); }
+  const buf = await wb.xlsx.writeBuffer();
+  const nome = `Mapa_cotacao_${q.codigoCompra || q.pacote}_${q.revisao}_${o?.nome || ""}`.replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, "_");
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
+  a.download = nome + ".xlsx"; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
 }
 
 /* gancho de teste local (sem efeito em produção) */
