@@ -491,12 +491,33 @@ details.filtro label:hover{background:var(--sand)}
 .bat-btn:hover{border-color:var(--primary);color:var(--primary)}
 .bat-btn.alerta{border-color:#E8C27A;background:var(--warn-bg);color:var(--warn);font-weight:600}
 .bat-ok{color:var(--green);font-weight:700;font-size:13px}
+
+/* imagens */
+.thumb{width:44px;height:44px;object-fit:contain;background:#fff;border:1px solid var(--rule);border-radius:6px;display:block}
+.thumb:not([src]),.thumb[src=""]{background:var(--sand)}
+.thumb-btn{border:0;background:none;padding:0;cursor:zoom-in;border-radius:6px}
+.thumb-btn:hover .thumb{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary-soft)}
+.thumb-btn.mini .thumb{width:28px;height:28px}
+.esc-wrap{display:flex;align-items:center;gap:4px}
+.cola{border:2px dashed var(--rule-strong);border-radius:12px;min-height:200px;display:grid;place-items:center;padding:12px;background:var(--sand);outline:none;text-align:center}
+.cola:focus,.cola.sobre{border-color:var(--primary);background:var(--primary-soft)}
+.cola-txt{color:var(--muted);line-height:1.6}
+.cola img{max-width:100%;max-height:340px;border-radius:6px}
+.lightbox img{width:100%;max-height:72vh;object-fit:contain;background:#fff;border-radius:8px;border:1px solid var(--rule)}
+.lightbox p{margin:10px 0 0;color:var(--ink);font-family:var(--font-cond);font-size:15px}
+/* status */
+.chip-status{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:2px 9px;margin-left:8px;vertical-align:middle}
+.chip-status.fin{background:var(--best);color:var(--best-ink);border:1px solid #BFE2CB}
+.banner.fin{background:#F3FAF5;border-color:#BFE2CB;color:var(--best-ink)}
+.travada input:disabled,.travada select:disabled,.travada textarea:disabled{opacity:1;color:var(--ink);cursor:default;background:transparent}
 </style>
 </head>
 <body>
 <div id="app"><div class="carregando">Carregando…</div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script type="module">
 /* =========================================================================
    QQP · Quadro de quantitativos e preços — Suprimentos
@@ -715,7 +736,7 @@ const modeloPorId = id => S.modelos.find(m => m.id === id);
 function normalizarQQP(q){
   q.modelo ??= { campos: [], formula: "0", descritivas: [], usaNivel2: true, nivel2Nome: "Pavimento", unidade: "un" };
   q.modelo.campos ??= []; q.modelo.descritivas ??= [];
-  q.insumos ??= []; q.fornecedores ??= []; q.ofertas ??= []; q.grupos ??= []; q.incc ??= {}; q.decisao ??= {};
+  q.insumos ??= []; q.fornecedores ??= []; q.ofertas ??= []; q.grupos ??= []; q.incc ??= {}; q.decisao ??= {}; q.status ??= "cotacao"; q.historico ??= [];
   q.fornecedores.forEach(f => { f.id ??= uid(); f.ajustes ??= {}; f.ajustes.outros ??= []; });
   q.insumos.forEach(i => { i.id ??= uid(); });
   q.ofertas.forEach(o => { o.id ??= uid(); });
@@ -971,7 +992,7 @@ function obraQQPs(){
       const sav = valor != null && r.orcCorr ? r.orcCorr - valor : null;
       const quando = x.atualizadoEm?.toDate ? x.atualizadoEm.toDate().toLocaleString("pt-BR", {dateStyle:"short", timeStyle:"short"}) : "";
       return `<tr class="click" data-act="abrirQQP" data-id="${x.id}">
-        <td class="obra">${esc(x.revisao)}</td><td>${esc(dataBR(x.data))}</td><td>${(x.fornecedores || []).length}</td>
+        <td class="obra">${esc(x.revisao)}${x.status === "finalizada" ? `<span class="chip-status fin" title="Finalizada em ${esc(x.finalizadaEm ? new Date(x.finalizadaEm).toLocaleDateString("pt-BR") : "")}">Finalizada</span>` : ""}</td><td>${esc(dataBR(x.data))}</td><td>${(x.fornecedores || []).length}</td>
         <td>${dc ? `<b>Compra definida</b> <span style="color:var(--muted);font-size:13px">${esc(dc.fornecedores.join(" + "))}${dc.pendentes ? ` · ${dc.pendentes} insumo(s) pendente(s)` : ""}</span>`
           : m ? esc(m.nome) + (m.falta ? ` <span style="color:var(--muted)">(parcial)</span>` : "") : "—"}</td>
         <td class="n">${valor != null ? brl(valor) : "—"}</td>
@@ -1147,7 +1168,7 @@ async function abrirQQP(id){
   if (!item) return;
   S.id = id; S.q = normalizarQQP(clone(semMeta({ ...item, atualizadoEm: null }))); S.versao = item.versao || 0;
   S.dirty = false; S.tab = "comp"; S.ocultos = new Set();
-  S.salvoEm = item.atualizadoEm?.toDate ? item.atualizadoEm.toDate() : null;
+  S.salvoEm = item.atualizadoEm?.toDate ? item.atualizadoEm.toDate() : null; S.atualizadoPor = item.atualizadoPor || "";
   S.view = "qqp"; render();
   S.unsub = onSnapshot(doc(db, C_QQP, id), snap => {
     if (snap.metadata?.hasPendingWrites || !snap.exists()) return;
@@ -1170,6 +1191,9 @@ async function salvar(forcar = false){
   if (!S.q || S.salvando) return;
   S.salvando = true; atualizarStatus();
   const ref = S.id ? doc(db, C_QQP, S.id) : doc(collection(db, C_QQP));
+  try {
+    await enviarImagensPendentes(ref.id);
+  } catch (ex){ S.salvando = false; atualizarStatus(); alert("Não foi possível gravar as imagens: " + ex.message); return; }
   const dados = clone(S.q);
   dados.resumo = resumoPara(S.q);
   try {
@@ -1223,7 +1247,11 @@ const TABS = [["comp","Comparativo"],["quant","Quantitativos"],["forn","Forneced
 function telaQQP(){
   const q = S.q, o = obraAtual();
   const crumbs = `<span class="sep">/</span><button data-act="voltarObra">${esc(o?.nome || "Obra")}</button><span class="sep">/</span><b>${esc([q.pacote, q.revisao].filter(Boolean).join(" "))}</b>`;
-  const dir = `<span id="status" class="status"></span><button class="btn sm" data-act="exportar">Exportar Excel</button><button class="btn sm primary" data-act="salvar">Salvar</button>`;
+  const fin = q.status === "finalizada";
+  const dir = `<span id="status" class="status"></span>${fin ? `<span class="chip-status fin">Finalizada</span>` : ""}
+    <button class="btn sm" data-act="exportar">Exportar Excel</button>
+    <button class="btn sm" data-act="pdf" title="${fin ? "Relatório final" : "Relatório preliminar, com marca d'água"}">${fin ? "PDF final" : "PDF em análise"}</button>
+    ${fin ? `<button class="btn sm" data-act="reabrir">Reabrir</button>` : `<button class="btn sm" data-act="finalizar">Finalizar</button><button class="btn sm primary" data-act="salvar">Salvar</button>`}`;
   return topo(crumbs, dir) + `
   <div class="tabs" role="tablist">${TABS.map(([k, t]) => `<button role="tab" aria-selected="${S.tab === k}" data-act="tab" data-tab="${k}">${t}</button>`).join("")}</div>
   <main id="main">${conteudoAba()}</main>`;
@@ -1238,7 +1266,10 @@ function bannerConflito(){
 function conteudoAba(){
   const avisoFormula = (() => { try { compilar(S.q.modelo.formula, chavesDe(S.q.modelo)); return ""; } catch (e){ return `<div class="banner">A fórmula do modelo desta QQP tem um problema: ${esc(e.message)}. Corrija em Dados da QQP.</div>`; } })();
   const corpo = S.tab === "comp" ? abaComparativo() : S.tab === "quant" ? abaQuantitativos() : S.tab === "forn" ? abaFornecedores() : abaDados();
-  return bannerConflito() + avisoFormula + corpo;
+  const q = S.q, fin = q.status === "finalizada";
+  const bFin = fin ? `<div class="banner fin"><span>QQP finalizada em ${esc(new Date(q.finalizadaEm).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }))} por ${esc(q.finalizadaPor || "")}${q.aprovador ? ` · aprovada por ${esc(q.aprovador)}` : ""}. Somente consulta.</span>
+    <button class="btn sm" data-act="pdf">Gerar PDF final</button><button class="btn sm" data-act="reabrir">Reabrir para edição</button></div>` : "";
+  return bannerConflito() + bFin + avisoFormula + corpo;
 }
 function filtroFornecedores(){
   const F = S.q.fornecedores; if (F.length < 2) return "";
@@ -1401,7 +1432,7 @@ function corpoComp(q, R, F){
             const best = I.min !== null && Math.abs(x.total - I.min) < 0.005;
             const emb = embTexto(x.o, un, it.global);
             const nEmb = !it.global && num(x.o.contem) > 1 ? Math.ceil(I.qtd / num(x.o.contem) - 1e-9) : null;
-            return `<td class="bl">${sel}</td>
+            return `<td class="bl"><div class="esc-wrap">${sel}${x.o.imagemId ? `<button class="thumb-btn mini" data-act="verImg" data-id="${x.o.id}" title="Ampliar imagem">${thumb(x.o.imagemId)}</button>` : ""}</div></td>
               <td class="n" title="${nEmb ? `Para o pedido: ${qtdF(nEmb)} ${esc(x.o.unidVenda || "unid.")}` : ""}">${brl(x.unit)}${emb ? `<span class="emb">${esc(emb)}</span>` : ""}</td>
               <td class="n ${best ? "best" : ""}">${brl(x.total)}</td>`;
           }).join("")}
@@ -1425,7 +1456,7 @@ function corpoComp(q, R, F){
               ${explic.size > 1 ? `<option selected disabled>(varia por linha)</option>` : ""}</select>` : "";
           const o = unica ? q.ofertas.find(x => x.id === unica) : null;
           const nEmb = o && num(o.contem) > 1 ? Math.ceil(ins.qtd / num(o.contem) - 1e-9) : null;
-          return `<td class="bl">${sel}</td><td class="n">${o ? brl(precoUn(o)) : ""}${nEmb ? `<span class="emb">${qtdF(nEmb)} ${esc(o.unidVenda || "unid.")} p/ pedido</span>` : ""}</td><td class="n">${brl(t.total)}${t.falta ? `<span class="emb">parcial</span>` : ""}</td>`;
+          return `<td class="bl"><div class="esc-wrap">${sel}${o?.imagemId ? `<button class="thumb-btn mini" data-act="verImg" data-id="${o.id}" title="Ampliar imagem">${thumb(o.imagemId)}</button>` : ""}</div></td><td class="n">${o ? brl(precoUn(o)) : ""}${nEmb ? `<span class="emb">${qtdF(nEmb)} ${esc(o.unidVenda || "unid.")} p/ pedido</span>` : ""}</td><td class="n">${brl(t.total)}${t.falta ? `<span class="emb">parcial</span>` : ""}</td>`;
         }).join("")}<td class="bl"></td><td></td></tr>`;
     }
   }
@@ -1575,7 +1606,7 @@ function abaFornecedores(){
         <span class="info">Unidade <input class="un" data-bind="insumos.${ki}.unidade" value="${esc(ins.unidade || "")}" placeholder="${esc(q.modelo.unidade || "un")}" aria-label="Unidade do insumo"></span>
         <span class="info">Qtd total <b>${qtdF(qtd)} ${esc(un)}</b></span>
         ${usados.has(ins.id) ? "" : `<span class="info" style="color:var(--warn)">sem uso nos quantitativos</span><button class="icon del" data-act="delIns" data-k="${ki}" aria-label="Excluir insumo">✕</button>`}</div>
-      ${linhas.length ? `<table class="ofertas"><thead><tr><th style="width:150px">Fornecedor</th><th>Linha / produto</th><th class="r" style="width:120px">Preço cotado (R$)</th><th style="width:150px">Unidade de venda</th><th class="r" style="width:110px">Contém (${esc(un)})</th><th class="r" style="width:130px">Preço por ${esc(un)}</th><th style="width:34px"></th></tr></thead><tbody>
+      ${linhas.length ? `<table class="ofertas"><thead><tr><th style="width:150px">Fornecedor</th><th>Linha / produto</th><th class="r" style="width:120px">Preço cotado (R$)</th><th style="width:150px">Unidade de venda</th><th class="r" style="width:110px">Contém (${esc(un)})</th><th class="r" style="width:130px">Preço por ${esc(un)}</th><th style="width:76px">Imagem</th><th style="width:34px"></th></tr></thead><tbody>
         ${linhas.map(({ o, oi, f }) => { const novoF = f.id !== ultimoF; ultimoF = f.id;
           return `<tr class="${novoF ? "sep" : ""}"><td class="forn-nome">${novoF ? esc(f.nome || "Sem nome") : ""}</td>
             <td><input data-bind="ofertas.${oi}.linha" value="${esc(o.linha)}" placeholder="Ex.: ROCA - VASO ZIP PLUS" aria-label="Linha"></td>
@@ -1583,6 +1614,9 @@ function abaFornecedores(){
             <td><input list="dlEmb" data-bind="ofertas.${oi}.unidVenda" data-emb="${oi}" value="${esc(o.unidVenda)}" placeholder="${esc(un)}" aria-label="Unidade de venda"></td>
             <td><input class="r" data-bind="ofertas.${oi}.contem" data-tipo="num" inputmode="decimal" value="${esc(inVal(o.contem))}" placeholder="1" aria-label="Conteúdo da unidade de venda"></td>
             <td class="calc" data-pu="${oi}">${brl(precoUn(o))}${num(o.contem) > 1 ? `<small>${qtdF(Math.ceil(qtd / num(o.contem) - 1e-9))} ${esc(o.unidVenda || "unid.")} p/ pedido</small>` : ""}</td>
+            <td>${o.imagemId ? `<button class="thumb-btn" data-act="imgOferta" data-o="${oi}" title="Ver ou trocar a imagem">${thumb(o.imagemId)}</button>`
+              : o.imagemArquivada ? `<button class="bat-btn" data-act="imgOferta" data-o="${oi}" title="A imagem foi apagada do banco e está no relatório final">arquivada</button>`
+              : `<button class="bat-btn" data-act="imgOferta" data-o="${oi}" title="Colar print do catálogo">+ imagem</button>`}</td>
             <td><button class="icon del" data-act="delOf" data-o="${oi}" aria-label="Excluir linha cotada">✕</button></td></tr>`; }).join("")}
       </tbody></table>` : ""}
       <div class="rodape">${FV.length ? `<select id="addOfF${ki}" aria-label="Fornecedor da nova linha">${FV.map(f => `<option value="${f.id}">${esc(f.nome || "Sem nome")}</option>`).join("")}</select>
@@ -1659,13 +1693,21 @@ function render(){
   else if (S.view === "modelo") app.innerHTML = telaModelo();
   else if (S.view === "incc") app.innerHTML = telaIncc();
   else if (S.view === "qqp"){ app.innerHTML = telaQQP(); atualizarStatus(); }
-  restaurarScroll(sc); window.scrollTo(0, y); ajustarCabecalhos();
+  restaurarScroll(sc); window.scrollTo(0, y); ajustarCabecalhos(); posRender();
+}
+function posRender(){
+  hidratarImagens();
+  if (!travada()) return;
+  const main = document.getElementById("main"); if (!main) return;
+  main.classList.add("travada");
+  main.querySelectorAll("input, select, textarea").forEach(el => { if (!el.dataset.filtro) el.disabled = true; });
+  main.querySelectorAll("button[data-act]").forEach(b => { if (!ACOES_LIVRES.has(b.dataset.act)) b.style.display = "none"; });
 }
 function renderAba(){
   if (S.view !== "qqp") return render();
   const sc = guardarScroll(); const aberto = document.getElementById("filtroF")?.open;
   const main = document.getElementById("main"); if (!main) return render();
-  main.innerHTML = conteudoAba(); restaurarScroll(sc); ajustarCabecalhos();
+  main.innerHTML = conteudoAba(); restaurarScroll(sc); ajustarCabecalhos(); posRender();
   if (aberto){ const d = document.getElementById("filtroF"); if (d) d.open = true; }
 }
 function atualizarCalculos(){
@@ -1710,9 +1752,12 @@ async function abrirObra(id){
   S.qqpsCarregando = false; if (S.view === "obra") render();
 }
 
+const ACOES_LIVRES = new Set(["irObras", "irModelos", "irIncc", "sair", "voltarObra", "tab", "toggle", "expandir", "recolher", "filtroTodos", "exportar", "pdf", "reabrir", "verImg", "imgOferta", "recarregarRemoto"]);
+const travada = () => S.view === "qqp" && S.q?.status === "finalizada";
 /* ---------------- eventos ---------------- */
 app.addEventListener("input", e => {
   const t = e.target, d = t.dataset;
+  if (travada()) return;
   if (d.bind && S.q){ setPath(S.q, d.bind, d.tipo === "num" ? parseIn(t.value) : t.value); marcarAlterado(); atualizarCalculos(); return; }
   if (d.obind && S.obraEdit){ setPath(S.obraEdit, d.obind, d.tipo === "num" ? parseIn(t.value) : t.value); S.obraDirty = true; return; }
   if (d.mbind && S.modeloEdit){
@@ -1732,6 +1777,7 @@ app.addEventListener("keyup", e => { if (e.target.id === "mFormula") S.caret = e
 app.addEventListener("click", e => { if (e.target.id === "mFormula") S.caret = e.target.selectionStart; });
 app.addEventListener("change", e => {
   const t = e.target, d = t.dataset;
+  if (travada() && !d.filtro) return;
   if (S.view === "qqp" && S.q){
     const q = S.q;
     if (d.bind && t.tagName === "SELECT"){ renderAba(); return; }
@@ -1828,6 +1874,7 @@ const proximaRev = r => { const mm = /^(\D*)(\d+)$/.exec(r || ""); return mm ? m
 
 async function executar(a, d, e){
   const q = S.q; const gi = +d.g, pi = +d.p, ii = +d.i;
+  if (travada() && !ACOES_LIVRES.has(a)) return toast("QQP finalizada: reabra para editar.");
   const mudou = () => { marcarAlterado(); renderAba(); };
   try {
   switch (a){
@@ -1945,15 +1992,13 @@ async function executar(a, d, e){
     case "recolher": q.grupos.forEach(g => g.n2.forEach(p => S.fechados.add(p.id))); renderAba(); break;
     case "decidir": { if (q.decisao[d.ins] === d.f) delete q.decisao[d.ins]; else q.decisao[d.ins] = d.f; mudou(); break; }
     case "decMenor": {
-      const R = calc(q); const F = fornVisiveis(q); let n = 0;
-      for (const ins of R.insumos.values()){
-        if (!ins.id) continue;
-        let cand = F.filter(f => ins.total[f.id].falta === 0 && ins.total[f.id].total > 0);
-        if (!cand.length) cand = F.filter(f => ins.total[f.id].total > 0);
-        if (!cand.length) continue;
-        q.decisao[ins.id] = cand.reduce((a, b) => ins.total[b.id].total < ins.total[a.id].total ? b : a).id; n++;
-      }
+      const dm = decisaoMenor(q, fornVisiveis(q)); const n = Object.keys(dm).length; Object.assign(q.decisao, dm);
       mudou(); toast(`${n} insumo(s) definidos pelo menor preço. Ajuste clicando nos valores.`, 3500); break; }
+    case "pdf": document.activeElement?.blur?.(); await gerarPDF(); break;
+    case "finalizar": document.activeElement?.blur?.(); modalFinalizar(); break;
+    case "reabrir": reabrir(); break;
+    case "imgOferta": modalImagemOferta(+d.o); break;
+    case "verImg": verImagem(d.id); break;
     case "decLimpar": if (!confirm("Limpar todas as escolhas da decisão de compra?")) return; q.decisao = {}; mudou(); break;
     case "filtroTodos": S.ocultos.clear(); renderAba(); break;
     case "addGrupo": q.grupos.push({ id: uid(), nome: "", orcamento: null, n2: [{ id: uid(), nome: "", valores: {}, itens: [] }] }); mudou(); focarUltimo('[data-bind^="grupos."][data-bind$=".nome"]:not([data-bind*=".n2."])'); break;
@@ -2013,10 +2058,12 @@ function focarUltimo(sel){ const els = document.querySelectorAll(sel); const el 
 function abrirModal(html){
   const bg = document.createElement("div"); bg.className = "modal-bg"; bg.innerHTML = `<div class="modal" role="dialog" aria-modal="true">${html}</div>`;
   document.body.appendChild(bg);
-  const fechar = () => bg.remove();
+  const porTecla = ev => { if (ev.key === "Escape" && document.body.contains(bg)){ ev.preventDefault(); fechar(); } };
+  const fechar = () => { bg.remove(); document.removeEventListener("keydown", porTecla); };
   bg.addEventListener("click", ev => { if (ev.target === bg || ev.target.closest("[data-fechar]")) fechar(); });
-  bg.addEventListener("keydown", ev => { if (ev.key === "Escape") fechar(); });
-  setTimeout(() => bg.querySelector("input,select,textarea")?.focus(), 30);
+  document.addEventListener("keydown", porTecla);
+  const md = bg.querySelector(".modal"); md.tabIndex = -1;
+  setTimeout(() => (bg.querySelector("input:not([type=file]):not([type=checkbox]),select,textarea") || md).focus(), 30);
   return { bg, fechar };
 }
 function modalNovaObra(){
@@ -2060,6 +2107,8 @@ function modalNovaQQP(baseId){
     if (base){
       q = normalizarQQP(clone(semMeta({ ...base, atualizadoEm: null })));
       q.revisao = rev; q.data = hojeISO();
+      q.status = "cotacao"; delete q.finalizadaEm; delete q.finalizadaPor; delete q.aprovador; delete q.pendenciasNaFinalizacao;
+      q.historico = [{ acao: `criada a partir de ${base.pacote} ${base.revisao}`, quando: new Date().toISOString(), quem: S.user?.email || "" }];
     } else {
       const m = modeloPorId(bg.querySelector("#nqMod").value); const { id: mid, ...snap } = clone(m);
       q = normalizarQQP({ obraId: o.id, modeloId: mid, modelo: snap, pacote: m.nome, revisao: rev, data: hojeISO(), incc: {}, observacoes: "", insumos: [], fornecedores: [], ofertas: [], grupos: [] });
@@ -2342,6 +2391,418 @@ async function exportarExcel(){
 
 /* gancho de teste local (sem efeito em produção) */
 window.__qqp = { S, calc, compilar, avaliar, render };
+
+/* =========================================================================
+   Imagens das linhas cotadas · Finalização da QQP · Relatórios em PDF
+   ========================================================================= */
+const C_IMG = "imagens";
+S.imgCache ??= {}; S.imgPend ??= {};
+
+/* ---------------- imagens ---------------- */
+function carregarImg(src){ return new Promise((ok, erro) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => erro(new Error("Não foi possível ler a imagem.")); i.src = src; }); }
+// reduz para ~1000 px e comprime (WebP, ou JPEG se o navegador não gerar WebP), abaixo do limite do Firestore
+async function comprimirImagem(blob){
+  const url = URL.createObjectURL(blob);
+  try {
+    const img = await carregarImg(url);
+    let max = 1000, qual = 0.82;
+    for (let t = 0; t < 7; t++){
+      const esc = Math.min(1, max / Math.max(img.width, img.height));
+      const w = Math.max(1, Math.round(img.width * esc)), h = Math.max(1, Math.round(img.height * esc));
+      const cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+      const cx = cv.getContext("2d"); cx.fillStyle = "#fff"; cx.fillRect(0, 0, w, h); cx.drawImage(img, 0, 0, w, h);
+      let data = cv.toDataURL("image/webp", qual);
+      if (!data.startsWith("data:image/webp")) data = cv.toDataURL("image/jpeg", qual);
+      if (data.length < 520000) return { data, w, h };
+      qual = Math.max(0.5, qual - 0.1); max = Math.round(max * 0.85);
+    }
+    throw new Error("A imagem é grande demais mesmo depois de comprimida.");
+  } finally { URL.revokeObjectURL(url); }
+}
+async function obterImagem(id){
+  if (!id) return null;
+  if (S.imgPend[id]) return S.imgPend[id];
+  if (S.imgCache[id]) return S.imgCache[id];
+  const snap = await getDoc(doc(db, C_IMG, id));
+  const u = snap.exists() ? snap.data().dataUrl : null;
+  if (u) S.imgCache[id] = u;
+  return u;
+}
+const srcImg = id => S.imgPend[id] || S.imgCache[id] || "";
+function thumb(id, extra = ""){ return `<img class="thumb" data-img="${id}" src="${srcImg(id)}" alt="Imagem da linha cotada" ${extra}>`; }
+function hidratarImagens(raiz = document){
+  const faltam = new Set([...raiz.querySelectorAll("img[data-img]")].filter(e => !e.getAttribute("src")).map(e => e.dataset.img));
+  faltam.forEach(id => obterImagem(id).then(u => { if (u) document.querySelectorAll(`img[data-img="${id}"]`).forEach(e => e.src = u); }).catch(() => {}));
+}
+async function enviarImagensPendentes(qqpId){
+  for (const [id, dataUrl] of Object.entries(S.imgPend)){
+    await setDoc(doc(db, C_IMG, id), { qqpId, dataUrl, criadoEm: new Date().toISOString(), criadoPor: S.user?.email || "" });
+    S.imgCache[id] = dataUrl; delete S.imgPend[id];
+  }
+}
+function legendaOferta(q, o){
+  const f = q.fornecedores.find(x => x.id === o.fornId), ins = insumoDe(q, o.insumoId);
+  return `${f?.nome || ""} · ${o.linha || "(sem nome)"} · ${ins?.nome || ""} · ${brl(precoUn(o))}/${unidadeInsumo(q, ins)}`;
+}
+function verImagem(ofertaId){
+  const q = S.q, o = q.ofertas.find(x => x.id === ofertaId); if (!o?.imagemId) return;
+  const { bg } = abrirModal(`<div class="lightbox"><img data-img="${o.imagemId}" src="${srcImg(o.imagemId)}" alt="${esc(legendaOferta(q, o))}">
+    <p>${esc(legendaOferta(q, o))}</p><div class="acts"><button class="btn" data-fechar>Fechar</button></div></div>`);
+  bg.querySelector(".modal").style.width = "min(1000px,96vw)";
+  hidratarImagens(bg);
+}
+function modalImagemOferta(oi){
+  const q = S.q, o = q.ofertas[oi]; if (!o) return;
+  if (q.status === "finalizada"){ if (o.imagemId) verImagem(o.id); return; }
+  const { bg, fechar } = abrirModal(`<h3>Imagem da linha cotada</h3><p>${esc(legendaOferta(q, o))}</p>
+    <div class="cola" id="imgZona" tabindex="0">
+      ${o.imagemId ? thumb(o.imagemId, 'style="max-width:100%;max-height:340px;width:auto;height:auto"') : `<div class="cola-txt"><b>Cole o print aqui (Ctrl + V)</b><br>ou arraste um arquivo de imagem para esta área</div>`}
+    </div>
+    <p id="imgMsg" style="font-size:13px;margin:8px 0 0"></p>
+    <div class="acts" style="justify-content:space-between">
+      <div style="display:flex;gap:8px"><label class="btn"><input type="file" accept="image/*" id="imgArq" hidden>Escolher arquivo</label>
+        ${o.imagemId ? `<button class="btn danger" id="imgRem">Remover imagem</button>` : ""}</div>
+      <button class="btn primary" data-fechar>Concluir</button></div>`);
+  hidratarImagens(bg);
+  const msg = bg.querySelector("#imgMsg");
+  const usar = async blob => {
+    if (!blob || !/^image\//.test(blob.type)){ msg.textContent = "Isso não é uma imagem."; msg.style.color = "var(--danger)"; return; }
+    msg.style.color = "var(--muted)"; msg.textContent = "Comprimindo…";
+    try {
+      const r = await comprimirImagem(blob);
+      const id = uid(); S.imgPend[id] = r.data;
+      o.imagemId = id; delete o.imagemArquivada; marcarAlterado();
+      bg.querySelector("#imgZona").innerHTML = `<img src="${r.data}" alt="" style="max-width:100%;max-height:340px">`;
+      msg.textContent = `Imagem pronta (${r.w}×${r.h} px, ${Math.round(r.data.length * 0.75 / 1024)} KB). Ela é gravada no banco ao salvar a QQP.`;
+    } catch (ex){ msg.style.color = "var(--danger)"; msg.textContent = ex.message; }
+  };
+  const colar = e => { const it = [...(e.clipboardData?.items || [])].find(x => x.type.startsWith("image/")); if (it){ e.preventDefault(); usar(it.getAsFile()); } };
+  document.addEventListener("paste", colar);
+  const zona = bg.querySelector("#imgZona");
+  zona.addEventListener("dragover", e => { e.preventDefault(); zona.classList.add("sobre"); });
+  zona.addEventListener("dragleave", () => zona.classList.remove("sobre"));
+  zona.addEventListener("drop", e => { e.preventDefault(); zona.classList.remove("sobre"); usar(e.dataTransfer.files[0]); });
+  bg.querySelector("#imgArq").addEventListener("change", e => usar(e.target.files[0]));
+  bg.querySelector("#imgRem")?.addEventListener("click", () => { delete o.imagemId; delete o.imagemArquivada; marcarAlterado(); fechar(); renderAba(); });
+  const ao = new MutationObserver(() => { if (!document.body.contains(bg)){ document.removeEventListener("paste", colar); ao.disconnect(); renderAba(); } });
+  ao.observe(document.body, { childList: true });
+  setTimeout(() => zona.focus(), 50);
+}
+
+/* ---------------- decisão sugerida e pendências ---------------- */
+function decisaoMenor(q, F = q.fornecedores){
+  const R = calc(q), dec = {};
+  for (const ins of R.insumos.values()){
+    if (!ins.id) continue;
+    let cand = F.filter(f => ins.total[f.id].falta === 0 && ins.total[f.id].total > 0);
+    if (!cand.length) cand = F.filter(f => ins.total[f.id].total > 0);
+    if (cand.length) dec[ins.id] = cand.reduce((a, b) => ins.total[b.id].total < ins.total[a.id].total ? b : a).id;
+  }
+  return dec;
+}
+function pendencias(q, R = calc(q)){
+  const P = [], F = q.fornecedores, hoje = hojeISO();
+  const em7 = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
+  const insumos = [...R.insumos.values()].filter(x => x.id);
+  const semCot = insumos.filter(x => F.every(f => x.total[f.id].total === 0)).map(x => x.nome);
+  if (semCot.length) P.push(`Insumos sem nenhuma cotação: ${semCot.join(", ")}.`);
+  const semDec = insumos.filter(x => !R.decisao.ins[x.id]).map(x => x.nome);
+  if (semDec.length) P.push(`Insumos sem fornecedor definido na decisão de compra: ${semDec.join(", ")}.`);
+  F.forEach(f => {
+    const nome = f.nome || "Fornecedor sem nome", fin = R.final[f.id];
+    if (fin.falta && fin.base > 0) P.push(`${nome}: proposta parcial, cotou ${R.nItens - fin.falta} de ${R.nItens} itens.`);
+    if (f.validade && f.validade < hoje) P.push(`${nome}: proposta vencida em ${dataBR(f.validade)}.`);
+    else if (f.validade && f.validade <= em7) P.push(`${nome}: proposta vence em ${dataBR(f.validade)}.`);
+    const falt = [!f.cnpj && "CNPJ", !f.condicaoPagamento && "condição de pagamento", !f.prazoEntrega && "prazo de entrega", !f.frete && "frete (CIF/FOB)", !f.validade && "validade da proposta"].filter(Boolean);
+    if (falt.length) P.push(`${nome}: falta ${falt.join(", ")}.`);
+  });
+  if (!R.orc) P.push("Orçamento não informado (agrupador ou insumo).");
+  if (R.orc && R.fator === 1) P.push("Correção do orçamento pelo INCC não definida (meses ou índices).");
+  if (R.inccFaltando) P.push("Mês de INCC escolhido sem índice na tabela.");
+  const cab = [!q.codigoCompra && "código da compra programada", !q.comprador && "comprador"].filter(Boolean);
+  if (cab.length) P.push(`Dados da QQP: falta ${cab.join(" e ")}.`);
+  return P;
+}
+
+/* ---------------- finalizar / reabrir ---------------- */
+function registrar(q, acao){ (q.historico ??= []).push({ acao, quando: new Date().toISOString(), quem: S.user?.email || "" }); }
+function modalFinalizar(){
+  const q = S.q, R = calc(q), P = pendencias(q, R);
+  const nImg = q.ofertas.filter(o => o.imagemId).length;
+  const { bg, fechar } = abrirModal(`<h3>Finalizar QQP</h3>
+    <p>A QQP fica travada para edição: dá para consultar, exportar e gerar o relatório final. Se precisar alterar depois, use "Reabrir" ou crie uma nova revisão.</p>
+    ${P.length ? `<div class="banner" style="display:block"><b>Pendências encontradas (${P.length}):</b><ul style="margin:6px 0 0 18px;padding:0">${P.map(x => `<li>${esc(x)}</li>`).join("")}</ul><p style="margin:6px 0 0">Você pode finalizar mesmo assim; elas ficam registradas no relatório.</p></div>` : `<p style="color:var(--green)">Nenhuma pendência encontrada.</p>`}
+    <div class="field"><label for="fAprov">Aprovado por (opcional)</label><input id="fAprov" value="${esc(q.aprovador || "")}" placeholder="Nome de quem aprovou a compra"></div>
+    <label class="checkline"><input type="checkbox" id="fPdf" checked> Gerar o relatório PDF final agora</label>
+    ${nImg ? `<label class="checkline"><input type="checkbox" id="fLimpa"> Depois de gerar o PDF, apagar as ${nImg} imagem(ns) do banco para liberar espaço (elas ficam no PDF)</label>` : ""}
+    <div class="acts"><button class="btn" data-fechar>Cancelar</button><button class="btn primary" id="fOk">Finalizar</button></div>`);
+  bg.querySelector("#fPdf")?.addEventListener("change", e => { const l = bg.querySelector("#fLimpa"); if (l){ l.disabled = !e.target.checked; if (!e.target.checked) l.checked = false; } });
+  bg.querySelector("#fOk").onclick = async () => {
+    const gerar = bg.querySelector("#fPdf").checked, limpar = bg.querySelector("#fLimpa")?.checked;
+    q.aprovador = bg.querySelector("#fAprov").value.trim();
+    q.status = "finalizada"; q.finalizadaEm = new Date().toISOString(); q.finalizadaPor = S.user?.email || "";
+    q.pendenciasNaFinalizacao = P;
+    registrar(q, P.length ? `finalizada com ${P.length} pendência(s)` : "finalizada");
+    fechar(); marcarAlterado(); await salvar();
+    if (S.dirty) return; // falhou ao salvar
+    if (gerar){
+      const ok = await gerarPDF();
+      if (ok && limpar) await apagarImagens();
+    }
+  };
+}
+async function apagarImagens(){
+  const q = S.q; const ids = [...new Set(q.ofertas.map(o => o.imagemId).filter(Boolean))];
+  if (!ids.length) return;
+  // não apaga imagens usadas por outras QQPs da obra (ex.: outra revisão copiada desta)
+  try { await carregarQQPsDaObra(); } catch {}
+  const usadasFora = new Set(S.qqps.filter(x => x.id !== S.id).flatMap(x => (x.ofertas || []).map(o => o.imagemId)).filter(Boolean));
+  let n = 0;
+  for (const id of ids){ if (!usadasFora.has(id)){ try { await deleteDoc(doc(db, C_IMG, id)); n++; } catch (e){ console.warn(e); } } }
+  q.ofertas.forEach(o => { if (o.imagemId && !usadasFora.has(o.imagemId)){ delete o.imagemId; o.imagemArquivada = true; } });
+  registrar(q, `${n} imagem(ns) apagada(s) do banco após o relatório final`);
+  marcarAlterado(); await salvar();
+  toast(`${n} imagem(ns) apagada(s) do banco. Elas estão no PDF final.`, 4000);
+}
+function reabrir(){
+  if (!confirm("Reabrir esta QQP para edição? Ela volta ao status em cotação.")) return;
+  const q = S.q; q.status = "cotacao"; registrar(q, "reaberta"); marcarAlterado(); salvar();
+}
+
+/* ---------------- relatório PDF ---------------- */
+function pdfTxt(s){
+  return String(s ?? "").replace(/[\u2212\u2013\u2014]/g, "-").replace(/\u2192/g, "->").replace(/[\u201C\u201D]/g, '"').replace(/[\u2018\u2019]/g, "'")
+    .replace(/\u2026/g, "...").replace(/\u2713/g, "").replace(/\u202F/g, " ").replace(/[^\x00-\xFF]/g, "");
+}
+async function paraJpeg(dataUrl){
+  const img = await carregarImg(dataUrl);
+  const cv = document.createElement("canvas"); cv.width = img.width; cv.height = img.height;
+  const cx = cv.getContext("2d"); cx.fillStyle = "#fff"; cx.fillRect(0, 0, cv.width, cv.height); cx.drawImage(img, 0, 0);
+  return { data: cv.toDataURL("image/jpeg", 0.9), w: img.width, h: img.height };
+}
+async function gerarPDF(){
+  if (!window.jspdf?.jsPDF){ alert("A biblioteca de PDF não carregou. Verifique a conexão e recarregue a página."); return false; }
+  const base = S.q, final = base.status === "finalizada";
+  toast("Gerando relatório…", 2000);
+  try {
+    const ids = [...new Set(base.ofertas.map(o => o.imagemId).filter(Boolean))];
+    const imgs = {};
+    await Promise.all(ids.map(async id => { try { const u = await obterImagem(id); if (u) imgs[id] = await paraJpeg(u); } catch (e){ console.warn(e); } }));
+    let q = base, cenarioMenor = false;
+    if (!Object.keys(base.decisao || {}).length){ q = normalizarQQP(clone(base)); q.decisao = decisaoMenor(q); cenarioMenor = true; }
+    const R = calc(q), F = q.fornecedores, m = q.modelo, o = obraAtual(), D = R.decisao;
+    const insumos = [...R.insumos.values()].filter(x => x.id);
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+    const W = 297, H = 210, M = 12, T = pdfTxt;
+    const VINHO = [122, 25, 48], ESC = [61, 15, 26], AREIA = [244, 241, 236], ROSA = [238, 225, 228], CINZA = [125, 117, 107], TINTA = [28, 26, 24], VERDE = [22, 163, 74], VERDE_C = [227, 239, 225];
+    const emitido = new Date().toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+    const titulo = `${o?.nome || ""} · ${q.pacote || ""} ${q.revisao || ""}`;
+    const fnome = id => F.find(f => f.id === id)?.nome || "";
+    let y = M;
+    const tabela = (opts) => { doc.autoTable({ theme: "grid", startY: y, margin: { left: M, right: M, top: 18, bottom: 16 },
+      styles: { font: "helvetica", fontSize: 8, cellPadding: 1.6, lineColor: [221, 214, 205], lineWidth: 0.1, textColor: TINTA, overflow: "linebreak" },
+      headStyles: { fillColor: VINHO, textColor: 255, fontStyle: "bold" }, alternateRowStyles: { fillColor: [252, 250, 247] }, ...opts,
+      head: opts.head?.map(r => r.map(c => typeof c === "string" ? T(c) : c)), body: opts.body.map(r => r.map(c => typeof c === "string" ? T(c) : (c && typeof c === "object" && "content" in c ? { ...c, content: T(c.content) } : c))) });
+      y = doc.lastAutoTable.finalY + 7; };
+    const secao = (t, sub) => { if (y > H - 40){ doc.addPage(); y = 20; } doc.setFont("helvetica", "bold"); doc.setFontSize(13); doc.setTextColor(...VINHO); doc.text(T(t.toUpperCase()), M, y);
+      if (sub){ doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(...CINZA); const l = doc.splitTextToSize(T(sub), W - 2 * M); doc.text(l, M, y + 4.5); y += 4.5 + l.length * 3.6; } else y += 3; y += 2; };
+    const paragrafo = (txt, size = 9) => { doc.setFont("helvetica", "normal"); doc.setFontSize(size); doc.setTextColor(...TINTA); const l = doc.splitTextToSize(T(txt), W - 2 * M); if (y + l.length * 4 > H - 16){ doc.addPage(); y = 20; } doc.text(l, M, y); y += l.length * (size * 0.42) + 3; };
+
+    /* ---- capa ---- */
+    doc.setFillColor(...VINHO); doc.rect(0, 0, W, 30, "F");
+    doc.setTextColor(255); doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.text("QQP · UQ-HUB · SUPRIMENTOS", M, 10);
+    doc.setFontSize(18); doc.text(T("QUADRO DE QUANTITATIVOS E PREÇOS"), M, 21);
+    doc.setFontSize(11); doc.text(T(final ? "RELATÓRIO FINAL" : "RELATÓRIO EM ANÁLISE · PRELIMINAR"), W - M, 21, { align: "right" });
+    y = 40;
+    const info = [["Obra", o?.nome], ["Carteira de insumo", q.pacote], ["Revisão", q.revisao], ["Compra programada", q.codigoCompra], ["Comprador", q.comprador],
+      ["Data das propostas", dataBR(q.data)], ["Comprar até", dataBR(q.comprarAte)], ["ID cockpit", q.idCockpit],
+      ["Status", final ? `Finalizada em ${new Date(q.finalizadaEm).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })} por ${q.finalizadaPor}` : "Em cotação"],
+      ["Emitido em", `${emitido} por ${S.user?.email || ""}`], ["Quantidade do insumo", `Total = ${formulaLegivel(m)}`]];
+    doc.setFontSize(9);
+    info.forEach(([k, v], i) => { const col = i % 2, lin = Math.floor(i / 2); const x = M + col * 140, yy = y + lin * 7;
+      doc.setFont("helvetica", "bold"); doc.setTextColor(...CINZA); doc.text(T(k.toUpperCase()), x, yy);
+      doc.setFont("helvetica", "normal"); doc.setTextColor(...TINTA); doc.text(T(v || "-"), x + 42, yy, { maxWidth: 95 }); });
+    y += Math.ceil(info.length / 2) * 7 + 4;
+    const sav = R.orcCorr ? R.orcCorr - D.total : null;
+    const cards = [[cenarioMenor ? "Cenário pelo menor preço" : (final ? "Total da compra" : "Total da compra (cenário atual)"), brl(D.total), D.pendentes ? `${D.pendentes} insumo(s) sem definição` : `${Object.keys(D.porForn).length} fornecedor(es)`],
+      ["Orçamento corrigido", R.orcCorr ? brl(R.orcCorr) : "-", R.fator !== 1 ? `base ${brl(R.orc)} × INCC ${fat(R.fator)}` : "sem correção pelo INCC"],
+      [sav === null ? "Saving" : sav >= 0 ? "Saving" : "Acima do orçamento", sav === null ? "-" : brl(Math.abs(sav)), sav !== null && R.orcCorr ? `${(Math.abs(sav) / R.orcCorr * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}% do orçamento` : ""],
+      ["Fornecedores na cotação", String(F.length), `${insumos.length} insumo(s) · ${R.nItens} linha(s)`]];
+    const cw = (W - 2 * M - 3 * 4) / 4;
+    cards.forEach(([k, v, s], i) => { const x = M + i * (cw + 4); const destaque = i === 2 && sav !== null;
+      doc.setFillColor(...(destaque ? (sav >= 0 ? VERDE_C : [253, 236, 233]) : AREIA)); doc.roundedRect(x, y, cw, 24, 2, 2, "F");
+      doc.setFont("helvetica", "bold"); doc.setFontSize(7.5); doc.setTextColor(...CINZA); doc.text(T(k.toUpperCase()), x + 4, y + 6);
+      doc.setFontSize(15); doc.setTextColor(...(destaque ? (sav >= 0 ? VERDE : [180, 35, 24]) : TINTA)); doc.text(T(v), x + 4, y + 15);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(...CINZA); doc.text(T(s), x + 4, y + 20.5, { maxWidth: cw - 8 }); });
+    y += 32;
+
+    /* ---- decisão de compra ---- */
+    secao(final ? "Decisão de compra" : (cenarioMenor ? "Cenário de compra pelo menor preço (sugestão)" : "Decisão de compra (cenário atual)"),
+      cenarioMenor ? (final ? "A decisão de compra não foi montada no sistema; abaixo, como referência, o cenário que escolhe para cada insumo o fornecedor de menor total." : "Nenhuma decisão foi montada ainda; este cenário escolhe, para cada insumo, o fornecedor de menor total.") : (final ? "" : "Escolhas ainda podem mudar até a finalização da QQP."));
+    tabela({ head: [["Insumo", "Qtd", "Un", "Comprar de", "Linha", "Preço unit.", "Total", "Orç. corrigido"]],
+      body: insumos.map(ins => { const x = D.ins[ins.id]; const os = x ? [...(ins.escolhidas[x.fid] || [])].map(id => q.ofertas.find(z => z.id === id)).filter(Boolean) : [];
+        const glob = ins.itens.every(i => i.global);
+        return [ins.nome, glob ? "VG" : qtdF(ins.qtd), ins.un, x ? fnome(x.fid) : "A DEFINIR", os.map(z => z.linha).join(" / ") || "-",
+          os.length === 1 ? brl(precoUn(os[0], glob)) : (os.length ? "varia" : "-"), x ? brl(x.total) : "-", ins.orc ? brl(ins.orc * R.fator) : "-"]; }),
+      columnStyles: { 1: { halign: "right" }, 5: { halign: "right" }, 6: { halign: "right", fontStyle: "bold" }, 7: { halign: "right" } } });
+    tabela({ head: [["Fornecedor na compra", "Insumos", "Subtotal", "Frete / descontos / ajustes", "Total"]],
+      body: [...Object.entries(D.porForn).map(([fid, x]) => [fnome(fid), String(x.insumos), brl(x.sub), x.ajuste ? `${x.ajuste > 0 ? "+" : "-"}${brl(Math.abs(x.ajuste))}` : "-", brl(x.total)]),
+        [{ content: "TOTAL DA COMPRA", colSpan: 4, styles: { fontStyle: "bold", fillColor: ROSA } }, { content: brl(D.total), styles: { fontStyle: "bold", fillColor: ROSA, halign: "right" } }]],
+      columnStyles: { 1: { halign: "center" }, 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" } }, tableWidth: 180 });
+
+    /* ---- ranking ---- */
+    secao("Propostas por fornecedor", "Total de cada proposta inteira, com frete, descontos e ajustes. Propostas parciais cobrem menos itens e não se comparam diretamente com as completas.");
+    tabela({ head: [["Fornecedor", "Cobertura", "Itens", "Ajustes", "Total da proposta", "x Orç. corrigido"]],
+      body: F.map(f => ({ f, x: R.final[f.id] })).sort((a, b) => (a.x.falta - b.x.falta) || (a.x.total - b.x.total)).map(({ f, x }) => [f.nome, x.falta ? `parcial: ${R.nItens - x.falta} de ${R.nItens}` : `completa (${R.nItens})`,
+        brl(x.base), x.ajuste ? `${x.ajuste > 0 ? "+" : "-"}${brl(Math.abs(x.ajuste))}` : "-", brl(x.total), R.orcCorr ? `${((x.total / R.orcCorr - 1) * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1, signDisplay: "always" })}%` : "-"]),
+      columnStyles: { 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right", fontStyle: "bold" }, 5: { halign: "right" } } });
+
+    /* ---- condições ---- */
+    const fichaLinhas = (f, completa) => {
+      const a = f.ajustes || {};
+      const base = [["Prazo de entrega", f.prazoEntrega], ["Condição de pagamento", f.condicaoPagamento], ["Entrada (% no pedido)", num(f.entradaPct) ? `${inVal(num(f.entradaPct))}%` : ""],
+        ["Parcelas (dias)", [f.parcelas, f.parcelasBase && `contadas do ${f.parcelasBase}`].filter(Boolean).join(" · ")], ["Frete", [f.frete, num(a.frete) ? brl(num(a.frete)) : ""].filter(Boolean).join(" · ")], ["Validade da proposta", dataBR(f.validade)]];
+      if (!completa) return base;
+      return [["CNPJ", f.cnpj], ...base, ["Desconto", [num(a.descontoPct) ? `${inVal(num(a.descontoPct))}%` : "", num(a.descontoValor) ? brl(num(a.descontoValor)) : ""].filter(Boolean).join(" + ")],
+        ["Outros ajustes", (a.outros || []).filter(x => num(x.valor)).map(x => `${x.desc || "ajuste"}: ${num(x.valor) > 0 ? "+" : "-"}${brl(Math.abs(num(x.valor)))}`).join("; ")],
+        ["Contato", f.contato], ["Telefone", f.telefone], ["E-mail", f.email], ["Observações", f.obs]];
+    };
+    const tabelaFichas = completa => { for (let i = 0; i < Math.max(F.length, 1); i += 5){ const grupo = F.slice(i, i + 5); if (!grupo.length) break;
+      const linhas = fichaLinhas(grupo[0], completa).map(([k]) => k);
+      tabela({ head: [["", ...grupo.map(f => f.nome || "Sem nome")]], body: linhas.map((k, li) => [{ content: k, styles: { fontStyle: "bold", fillColor: AREIA } }, ...grupo.map(f => fichaLinhas(f, completa)[li][1] || "-")]),
+        columnStyles: { 0: { cellWidth: 42 } } }); } };
+    secao("Condições comerciais");
+    tabelaFichas(false);
+
+    /* ---- pendências ---- */
+    const P = final ? (q.pendenciasNaFinalizacao || []) : pendencias(q, R);
+    if (!final || P.length){
+      secao(final ? "Pendências aceitas na finalização" : "Pendências para fechar a cotação");
+      if (P.length) P.forEach(x => paragrafo(`•  ${x}`, 9)); else paragrafo("Nenhuma pendência encontrada.");
+    }
+
+    /* ---- comparativo por insumo com imagens ---- */
+    doc.addPage(); y = 20;
+    secao("Comparativo por insumo", "Linhas cotadas por fornecedor, com a imagem do catálogo. ESCOLHIDO indica o fornecedor da decisão de compra; MENOR PREÇO, o menor total entre as propostas que cobrem todo o insumo.");
+    const cols = 4, gap = 4, cwid = (W - 2 * M - (cols - 1) * gap) / cols, chei = 60, ih = 32;
+    for (const ins of insumos){
+      const glob = ins.itens.every(i => i.global);
+      const fs = F.filter(f => ofertasDe(q, ins.id, f.id).length);
+      const nao = F.filter(f => !ofertasDe(q, ins.id, f.id).length).map(f => f.nome);
+      const comp = fs.filter(f => ins.total[f.id].falta === 0 && ins.total[f.id].total > 0).map(f => ins.total[f.id].total);
+      const mn = comp.length > 1 ? Math.min(...comp) : null;
+      if (y + 12 + chei > H - 16){ doc.addPage(); y = 20; }
+      doc.setFillColor(...AREIA); doc.rect(M, y - 4, W - 2 * M, 8, "F");
+      doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(...TINTA); doc.text(T(ins.nome), M + 2, y + 1.5);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(...CINZA);
+      doc.text(T(`${glob ? "valor global" : `${qtdF(ins.qtd)} ${ins.un}`}${ins.orc ? ` · orçamento corrigido ${brl(ins.orc * R.fator)}` : ""}${nao.length ? ` · não cotado por: ${nao.join(", ")}` : ""}`), W - M - 2, y + 1.5, { align: "right", maxWidth: 170 });
+      y += 7;
+      if (!fs.length){ paragrafo("Nenhum fornecedor cotou este insumo.", 8.5); continue; }
+      fs.forEach((f, k) => {
+        if (k > 0 && k % cols === 0){ y += chei + gap; if (y + chei > H - 16){ doc.addPage(); y = 20; } }
+        const x = M + (k % cols) * (cwid + gap), yy = y;
+        const ops = ofertasDe(q, ins.id, f.id);
+        const escIds = [...(ins.escolhidas[f.id] || [])]; const op = q.ofertas.find(z => z.id === escIds[0]) || ops[0];
+        const escolhido = D.ins[ins.id]?.fid === f.id, menor = mn !== null && ins.total[f.id].falta === 0 && Math.abs(ins.total[f.id].total - mn) < 0.005;
+        doc.setDrawColor(...(escolhido ? VINHO : [221, 214, 205])); doc.setLineWidth(escolhido ? 0.6 : 0.2); doc.setFillColor(255, 255, 255); doc.roundedRect(x, yy, cwid, chei, 2, 2, "FD");
+        const im = op?.imagemId ? imgs[op.imagemId] : null;
+        if (im){ const esc_ = Math.min((cwid - 6) / im.w, ih / im.h); const w = im.w * esc_, h = im.h * esc_; doc.addImage(im.data, "JPEG", x + (cwid - w) / 2, yy + 3 + (ih - h) / 2, w, h); }
+        else { doc.setFillColor(...AREIA); doc.rect(x + 3, yy + 3, cwid - 6, ih, "F"); doc.setFontSize(8); doc.setTextColor(...CINZA); doc.text(T(op?.imagemArquivada ? "imagem arquivada" : "sem imagem"), x + cwid / 2, yy + 3 + ih / 2, { align: "center" }); }
+        let ty = yy + ih + 8;
+        doc.setFont("helvetica", "bold"); doc.setFontSize(9.5); doc.setTextColor(...VINHO); doc.text(T(f.nome || ""), x + 3, ty, { maxWidth: cwid - 6 });
+        const tags = [escolhido && "ESCOLHIDO", menor && "MENOR PREÇO"].filter(Boolean);
+        if (tags.length){ doc.setFontSize(6.5); doc.setTextColor(...(escolhido ? VINHO : VERDE)); doc.text(T(tags.join(" · ")), x + cwid - 3, ty, { align: "right" }); }
+        ty += 4.5; doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...TINTA);
+        const linhaTxt = doc.splitTextToSize(T(op?.linha || "-"), cwid - 6).slice(0, 2); doc.text(linhaTxt, x + 3, ty); ty += linhaTxt.length * 3.4;
+        doc.setTextColor(...CINZA); doc.setFontSize(7.5);
+        if (op){ const emb = !glob && (op.unidVenda || num(op.contem) > 1) ? ` (${brl(num(op.preco))} / ${op.unidVenda || "unid."}${num(op.contem) > 1 ? ` c/ ${qtdF(num(op.contem))}` : ""})` : ""; doc.text(T(`${brl(precoUn(op, glob))}${glob ? "" : ` / ${ins.un}`}${emb}`), x + 3, ty, { maxWidth: cwid - 6 }); }
+        ty += 4; doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(...TINTA);
+        doc.text(T(ins.total[f.id].total ? `Total ${brl(ins.total[f.id].total)}${ins.total[f.id].falta ? " (parcial)" : ""}` : "não considerado"), x + 3, ty);
+        if (ops.length > 1){ ty += 3.8; doc.setFont("helvetica", "normal"); doc.setFontSize(6.8); doc.setTextColor(...CINZA);
+          doc.text(doc.splitTextToSize(T(`Outras linhas: ${ops.filter(z => z !== op).map(z => `${z.linha} (${brl(precoUn(z, glob))})`).join("; ")}`), cwid - 6).slice(0, 2), x + 3, ty); }
+      });
+      y += chei + 9;
+    }
+
+    /* ---- anexos ---- */
+    doc.addPage(); y = 20;
+    secao("Anexo A · Quantitativos completos", `Total = ${formulaLegivel(m)}. Quantidades finais incluem as personalizações.`);
+    const Dsc = m.descritivas, Cs = m.campos, GR = ehGranito(m);
+    const corpoQ = [], estilos = [];
+    for (const g of q.grupos){
+      const G = R.grupos[g.id];
+      corpoQ.push([g.nome || "Agrupador", ...Dsc.map(() => ""), ...(GR ? [""] : []), ...Cs.map(() => ""), G.qtd ? qtdF(G.qtd) : "", "", "", g.orcamento ? brl(num(g.orcamento)) : ""]); estilos.push("g");
+      for (const p of g.n2){
+        if (m.usaNivel2){ corpoQ.push([`   ${p.nome || m.nivel2Nome}`, ...Dsc.map(() => ""), ...(GR ? [""] : []), ...Cs.map(c => c.nivel === "n2" ? qtdF(num(p.valores[c.chave])) : ""), qtdF(R.n2[p.id].qtd), "", "", ""]); estilos.push("p"); }
+        for (const it of p.itens){ const I = R.itens[it.id], ins = insumoDe(q, it.insumoId);
+          corpoQ.push([`      ${ins?.nome || "-"}`, ...Dsc.map(d => it.desc[d.id] || ""), ...(GR ? [I.partes?.tipo || ""] : []), ...Cs.map(c => it.global ? "" : qtdF(num(I.vars[c.chave]))),
+            it.global ? "VG" : qtdF(I.qtd), I.nPers ? `${I.persSoma > 0 ? "+" : ""}${qtdF(I.persSoma)}` : "", unidadeInsumo(q, ins), I.orc ? brl(I.orc) : ""]); estilos.push("i"); }
+      }
+    }
+    tabela({ head: [[`Agrupador / ${m.usaNivel2 ? m.nivel2Nome.toLowerCase() + " / " : ""}${rotuloInsumo(m).toLowerCase()}`, ...Dsc.map(d => d.nome), ...(GR ? ["Tipo"] : []), ...Cs.map(c => c.nome), "Total", "Pers.", "Un", "Orçamento"]],
+      body: corpoQ, styles: { font: "helvetica", fontSize: 7, cellPadding: 1.2, lineColor: [221, 214, 205], lineWidth: 0.1, textColor: TINTA },
+      didParseCell: d => { if (d.section !== "body") return; const e = estilos[d.row.index]; if (e === "g"){ d.cell.styles.fillColor = ESC; d.cell.styles.textColor = 255; d.cell.styles.fontStyle = "bold"; } else if (e === "p"){ d.cell.styles.fillColor = AREIA; d.cell.styles.fontStyle = "bold"; } if (d.column.index > Dsc.length + (GR ? 1 : 0)) d.cell.styles.halign = "right"; } });
+
+    const pers = []; q.grupos.forEach(g => g.n2.forEach(p => p.itens.forEach(it => (it.pers || []).forEach(x => pers.push([g.nome, p.nome, insumoDe(q, it.insumoId)?.nome || "", x.onde || "", `${num(x.qtd) > 0 ? "+" : ""}${qtdF(num(x.qtd))}`, x.motivo || ""])))));
+    secao("Anexo B · Personalizações");
+    if (pers.length) tabela({ head: [["Agrupador", m.usaNivel2 ? m.nivel2Nome : "", rotuloInsumo(m), "Onde", "Qtd (+/-)", "Motivo"]], body: pers, columnStyles: { 4: { halign: "right" } } });
+    else paragrafo("Nenhuma personalização lançada.");
+
+    secao("Anexo C · Todas as linhas cotadas", "Inclui as linhas não escolhidas. O preço por unidade já considera a embalagem informada.");
+    const lc = [];
+    for (const ins of insumos) for (const f of F) for (const op of ofertasDe(q, ins.id, f.id)){
+      const usos = ins.itens.filter(it => R.itens[it.id].por[f.id]?.o?.id === op.id).length;
+      lc.push([ins.nome, f.nome, op.linha || "", brl(num(op.preco)), op.unidVenda || "", num(op.contem) ? qtdF(num(op.contem)) : "1", brl(precoUn(op, ins.itens.every(i => i.global))), usos === 0 ? "não" : usos === ins.itens.length ? "sim" : `em ${usos} de ${ins.itens.length}`, op.imagemId ? "sim" : op.imagemArquivada ? "arquivada" : "-"]);
+    }
+    if (lc.length) tabela({ head: [["Insumo", "Fornecedor", "Linha / produto", "Preço cotado", "Unid. venda", "Contém", "Preço por un.", "Escolhida", "Imagem"]], body: lc, columnStyles: { 3: { halign: "right" }, 5: { halign: "right" }, 6: { halign: "right" } } });
+    else paragrafo("Nenhuma linha cotada.");
+
+    secao("Anexo D · Ficha completa dos fornecedores");
+    if (F.length) tabelaFichas(true); else paragrafo("Nenhum fornecedor cadastrado.");
+
+    secao("Anexo E · Orçamento e INCC");
+    const ii = q.incc || {};
+    tabela({ head: [["", "Mês", "Índice"]], body: [["INCC base (orçamento)", ii.mesBase ? mesBR(ii.mesBase) : "informado manualmente", R.inccBase ? inVal(R.inccBase) : "-"], ["INCC atual (T-1)", ii.mesAtual ? mesBR(ii.mesAtual) : "informado manualmente", R.inccAtual ? inVal(R.inccAtual) : "-"],
+      [{ content: "Fator de correção", styles: { fontStyle: "bold" } }, "", { content: fat(R.fator), styles: { fontStyle: "bold" } }]], tableWidth: 150 });
+    const orcL = [...q.grupos.filter(g => num(g.orcamento)).map(g => [`Agrupador: ${g.nome}`, brl(num(g.orcamento)), brl(num(g.orcamento) * R.fator)]),
+      ...insumos.filter(x => x.orc).map(x => [`Insumo: ${x.nome}`, brl(x.orc), brl(x.orc * R.fator)]),
+      [{ content: "TOTAL", styles: { fontStyle: "bold", fillColor: ROSA } }, { content: brl(R.orc), styles: { fontStyle: "bold", fillColor: ROSA } }, { content: brl(R.orcCorr), styles: { fontStyle: "bold", fillColor: ROSA } }]];
+    tabela({ head: [["Orçamento", "Base", "Corrigido"]], body: orcL, columnStyles: { 1: { halign: "right" }, 2: { halign: "right" } }, tableWidth: 180 });
+
+    secao("Observações e histórico");
+    paragrafo(q.observacoes ? `Observações: ${q.observacoes}` : "Sem observações.");
+    const hist = [...(q.historico || []).map(h => [new Date(h.quando).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }), h.quem, h.acao])];
+    if (S.salvoEm) hist.push([S.salvoEm.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }), S.atualizadoPor || "", "última gravação"]);
+    if (hist.length) tabela({ head: [["Quando", "Quem", "O quê"]], body: hist, tableWidth: 200 });
+
+    if (final){
+      secao("Aprovação");
+      const campos = [["Responsável pela compra", q.comprador || ""], ["Aprovado por", q.aprovador || ""], ["Data", ""], ["Assinatura", ""]];
+      if (y + campos.length * 12 > H - 16){ doc.addPage(); y = 24; }
+      campos.forEach(([k, v]) => { doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(...CINZA); doc.text(T(k.toUpperCase()), M, y);
+        doc.setFont("helvetica", "normal"); doc.setTextColor(...TINTA); doc.text(T(v), M + 55, y - 1); doc.setDrawColor(...CINZA); doc.setLineWidth(0.2); doc.line(M + 55, y + 1, M + 180, y + 1); y += 12; });
+    }
+
+    /* ---- rodapé, cabeçalho e marca d'água ---- */
+    const n = doc.getNumberOfPages();
+    for (let i = 1; i <= n; i++){
+      doc.setPage(i);
+      if (i > 1){ doc.setFillColor(...VINHO); doc.rect(0, 0, W, 9, "F"); doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(255);
+        doc.text(T(`QQP · ${titulo}`), M, 6); doc.text(T(final ? "RELATÓRIO FINAL" : "EM ANÁLISE · PRELIMINAR"), W - M, 6, { align: "right" }); }
+      doc.setDrawColor(221, 214, 205); doc.setLineWidth(0.2); doc.line(M, H - 10, W - M, H - 10);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(...CINZA);
+      doc.text(T(`${titulo} · ${final ? "Finalizada" : "Preliminar, sujeito a alteração"}`), M, H - 6);
+      doc.text(T(`Emitido em ${emitido} por ${S.user?.email || ""} · Página ${i} de ${n}`), W - M, H - 6, { align: "right" });
+      if (!final){ doc.saveGraphicsState(); doc.setGState(new doc.GState({ opacity: 0.07 })); doc.setFont("helvetica", "bold"); doc.setFontSize(58); doc.setTextColor(...VINHO);
+        doc.text(T("EM ANÁLISE · PRELIMINAR"), W / 2, H / 2 + 10, { align: "center", angle: 18 }); doc.restoreGraphicsState(); }
+    }
+    const nome = `Relatorio_${final ? "FINAL" : "PRELIMINAR"}_${q.codigoCompra || q.pacote}_${q.revisao}_${o?.nome || ""}`.replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, "_");
+    doc.save(nome + ".pdf");
+    window.__ultimoPdf = doc; // usado só em testes locais
+    return true;
+  } catch (ex){ console.error(ex); alert("Não foi possível gerar o PDF: " + ex.message); return false; }
+}
 </script>
 </body>
 </html>
