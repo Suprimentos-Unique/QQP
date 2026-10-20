@@ -2684,8 +2684,8 @@ async function gerarPDF(){
 
     /* ---- comparativo por insumo com imagens ---- */
     doc.addPage(); y = 20;
-    secao("Comparativo por insumo", "Linhas cotadas por fornecedor, com a imagem do catálogo. ESCOLHIDO indica o fornecedor da decisão de compra; MENOR PREÇO, o menor total entre as propostas que cobrem todo o insumo.");
-    const cols = 4, gap = 4, cwid = (W - 2 * M - (cols - 1) * gap) / cols, chei = 60, ih = 32;
+    secao("Comparativo por insumo", "Todas as linhas cotadas, com a imagem do catálogo. O total de cada cartão considera a compra de todo o insumo com aquela linha. ESCOLHIDO indica a linha da decisão de compra até o momento; MENOR PREÇO, a opção mais barata entre todas as linhas.");
+    const cols = 4, gap = 4, cwid = (W - 2 * M - (cols - 1) * gap) / cols, chei = 63, ih = 32;
     for (const ins of insumos){
       const glob = ins.itens.every(i => i.global);
       const fs = F.filter(f => ofertasDe(q, ins.id, f.id).length);
@@ -2699,28 +2699,36 @@ async function gerarPDF(){
       doc.text(T(`${glob ? "valor global" : `${qtdF(ins.qtd)} ${ins.un}`}${ins.orc ? ` · orçamento corrigido ${brl(ins.orc * R.fator)}` : ""}${nao.length ? ` · não cotado por: ${nao.join(", ")}` : ""}`), W - M - 2, y + 1.5, { align: "right", maxWidth: 170 });
       y += 7;
       if (!fs.length){ paragrafo("Nenhum fornecedor cotou este insumo.", 8.5); continue; }
-      fs.forEach((f, k) => {
+      // um cartão por linha cotada: fornecedor na ordem das colunas; a linha selecionada primeiro, depois as demais por preço
+      const cartoes = [];
+      fs.forEach(f => {
+        const escIds = new Set(ins.escolhidas[f.id] || []);
+        ofertasDe(q, ins.id, f.id).slice().sort((a2, b2) => (escIds.has(b2.id) - escIds.has(a2.id)) || (precoUn(a2, glob) - precoUn(b2, glob)))
+          .forEach(op => cartoes.push({ f, op, sel: escIds.has(op.id), total: glob ? num(op.preco) : ins.qtd * precoUn(op, glob) }));
+      });
+      const menorTot = Math.min(...cartoes.map(c => c.total).filter(t => t > 0));
+      cartoes.forEach((c, k) => {
         if (k > 0 && k % cols === 0){ y += chei + gap; if (y + chei > H - 16){ doc.addPage(); y = 20; } }
-        const x = M + (k % cols) * (cwid + gap), yy = y;
-        const ops = ofertasDe(q, ins.id, f.id);
-        const escIds = [...(ins.escolhidas[f.id] || [])]; const op = q.ofertas.find(z => z.id === escIds[0]) || ops[0];
-        const escolhido = D.ins[ins.id]?.fid === f.id, menor = mn !== null && ins.total[f.id].falta === 0 && Math.abs(ins.total[f.id].total - mn) < 0.005;
+        const x = M + (k % cols) * (cwid + gap), yy = y, { f, op } = c;
+        const escolhido = c.sel && D.ins[ins.id]?.fid === f.id;
+        const menor = cartoes.length > 1 && c.total > 0 && Math.abs(c.total - menorTot) < 0.005;
         doc.setDrawColor(...(escolhido ? VINHO : [221, 214, 205])); doc.setLineWidth(escolhido ? 0.6 : 0.2); doc.setFillColor(255, 255, 255); doc.roundedRect(x, yy, cwid, chei, 2, 2, "FD");
-        const im = op?.imagemId ? imgs[op.imagemId] : null;
+        const im = op.imagemId ? imgs[op.imagemId] : null;
         if (im){ const esc_ = Math.min((cwid - 6) / im.w, ih / im.h); const w = im.w * esc_, h = im.h * esc_; doc.addImage(im.data, "JPEG", x + (cwid - w) / 2, yy + 3 + (ih - h) / 2, w, h); }
-        else { doc.setFillColor(...AREIA); doc.rect(x + 3, yy + 3, cwid - 6, ih, "F"); doc.setFontSize(8); doc.setTextColor(...CINZA); doc.text(T(op?.imagemArquivada ? "imagem arquivada" : "sem imagem"), x + cwid / 2, yy + 3 + ih / 2, { align: "center" }); }
+        else { doc.setFillColor(...AREIA); doc.rect(x + 3, yy + 3, cwid - 6, ih, "F"); doc.setFontSize(8); doc.setTextColor(...CINZA); doc.text(T(op.imagemArquivada ? "imagem arquivada" : "sem imagem"), x + cwid / 2, yy + 3 + ih / 2, { align: "center" }); }
         let ty = yy + ih + 8;
-        doc.setFont("helvetica", "bold"); doc.setFontSize(9.5); doc.setTextColor(...VINHO); doc.text(T(f.nome || ""), x + 3, ty, { maxWidth: cwid - 6 });
+        doc.setFont("helvetica", "bold"); doc.setFontSize(9.5); doc.setTextColor(...VINHO); doc.text(T(f.nome || ""), x + 3, ty, { maxWidth: cwid - 34 });
         const tags = [escolhido && "ESCOLHIDO", menor && "MENOR PREÇO"].filter(Boolean);
         if (tags.length){ doc.setFontSize(6.5); doc.setTextColor(...(escolhido ? VINHO : VERDE)); doc.text(T(tags.join(" · ")), x + cwid - 3, ty, { align: "right" }); }
+        else if (c.sel){ doc.setFont("helvetica", "normal"); doc.setFontSize(6.5); doc.setTextColor(...CINZA); doc.text(T("selecionada no comparativo"), x + cwid - 3, ty, { align: "right" }); }
         ty += 4.5; doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...TINTA);
-        const linhaTxt = doc.splitTextToSize(T(op?.linha || "-"), cwid - 6).slice(0, 2); doc.text(linhaTxt, x + 3, ty); ty += linhaTxt.length * 3.4;
+        const linhaTxt = doc.splitTextToSize(T(op.linha || "-"), cwid - 6).slice(0, 2); doc.text(linhaTxt, x + 3, ty); ty += linhaTxt.length * 3.4;
         doc.setTextColor(...CINZA); doc.setFontSize(7.5);
-        if (op){ const emb = !glob && (op.unidVenda || num(op.contem) > 1) ? ` (${brl(num(op.preco))} / ${op.unidVenda || "unid."}${num(op.contem) > 1 ? ` c/ ${qtdF(num(op.contem))}` : ""})` : ""; doc.text(T(`${brl(precoUn(op, glob))}${glob ? "" : ` / ${ins.un}`}${emb}`), x + 3, ty, { maxWidth: cwid - 6 }); }
-        ty += 4; doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(...TINTA);
-        doc.text(T(ins.total[f.id].total ? `Total ${brl(ins.total[f.id].total)}${ins.total[f.id].falta ? " (parcial)" : ""}` : "não considerado"), x + 3, ty);
-        if (ops.length > 1){ ty += 3.8; doc.setFont("helvetica", "normal"); doc.setFontSize(6.8); doc.setTextColor(...CINZA);
-          doc.text(doc.splitTextToSize(T(`Outras linhas: ${ops.filter(z => z !== op).map(z => `${z.linha} (${brl(precoUn(z, glob))})`).join("; ")}`), cwid - 6).slice(0, 2), x + 3, ty); }
+        const emb = !glob && (op.unidVenda || num(op.contem) > 1) ? ` (${brl(num(op.preco))} / ${op.unidVenda || "unid."}${num(op.contem) > 1 ? ` c/ ${qtdF(num(op.contem))}` : ""})` : "";
+        doc.text(T(`${brl(precoUn(op, glob))}${glob ? "" : ` / ${ins.un}`}${emb}`), x + 3, ty, { maxWidth: cwid - 6 });
+        ty += 4; doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(...(menor ? VERDE : TINTA));
+        doc.text(T(`Total ${brl(c.total)}`), x + 3, ty);
+        if (!glob && cartoes.length > 1 && !menor && menorTot > 0){ doc.setFont("helvetica", "normal"); doc.setFontSize(7); doc.setTextColor(...CINZA); doc.text(T(`+${brl(c.total - menorTot)} em relação ao menor preço`), x + 3, ty + 3.8); }
       });
       y += chei + 9;
     }
