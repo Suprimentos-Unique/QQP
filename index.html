@@ -490,6 +490,8 @@ details.filtro label:hover{background:var(--sand)}
 .bat-btn{border:1px solid var(--rule-strong);background:var(--paper);border-radius:999px;font-size:11px;padding:1px 7px;cursor:pointer;white-space:nowrap;color:var(--muted);font-family:var(--font)}
 .bat-btn:hover{border-color:var(--primary);color:var(--primary)}
 .bat-btn.alerta{border-color:#E8C27A;background:var(--warn-bg);color:var(--warn);font-weight:600}
+.nao-usa{color:var(--faint);display:block;text-align:center}
+table.ofertas select.rend-tipo{min-width:212px}
 .bat-ok{color:var(--green);font-weight:700;font-size:13px}
 
 /* imagens */
@@ -1386,11 +1388,14 @@ function selectEscolha(q, it, f, I, dataAttr){
     <option value="__none" ${sel === "__none" ? "selected" : ""}>Não considerar</option></select>`;
 }
 /* rendimento (ficha técnica): opcional por insumo */
-const temRend = o => num(o.rend) > 0 && num(o.conteudo) > 0;
-const cobreDe = o => o.rendTipo === "consumo" ? num(o.conteudo) / num(o.rend) : num(o.conteudo) * num(o.rend);
+// tipos: "embalagem" (a ficha diz quanto a embalagem inteira cobre), "rende" (por kg ou L) e "consumo" (kg ou L por unidade do insumo)
+const tipoRend = o => o.rendTipo || (num(o.conteudo) > 0 ? "rende" : "embalagem");
+const temRend = o => num(o.rend) > 0 && (tipoRend(o) === "embalagem" || num(o.conteudo) > 0);
+const cobreDe = o => { const t = tipoRend(o); return t === "embalagem" ? num(o.rend) : t === "consumo" ? num(o.conteudo) / num(o.rend) : num(o.conteudo) * num(o.rend); };
 function sincRend(o){ if (o && temRend(o)) o.contem = Math.round(cobreDe(o) * 10000) / 10000; }
-function rendCurto(o, un){ const cu = o.conteudoUn || "un."; return o.rendTipo === "consumo" ? `consumo ${qtdF(num(o.rend))} ${cu}/${un}` : `rende ${qtdF(num(o.rend))} ${un}/${cu}`; }
-function rendTxt(o, un){ return temRend(o) ? `${qtdF(num(o.conteudo))} ${o.conteudoUn || "un."} · ${rendCurto(o, un)} = ${qtdF(cobreDe(o))} ${un}` : ""; }
+function rendCurto(o, un){ const cu = o.conteudoUn || "un.", t = tipoRend(o);
+  return t === "embalagem" ? `cobre ${qtdF(num(o.rend))} ${un} por embalagem` : t === "consumo" ? `consumo ${qtdF(num(o.rend))} ${cu}/${un}` : `rende ${qtdF(num(o.rend))} ${un}/${cu}`; }
+function rendTxt(o, un){ if (!temRend(o)) return ""; return tipoRend(o) === "embalagem" ? `${o.unidVenda || "embalagem"} cobre ${qtdF(num(o.rend))} ${un}` : `${qtdF(num(o.conteudo))} ${o.conteudoUn || "un."} · ${rendCurto(o, un)} = ${qtdF(cobreDe(o))} ${un}`; }
 function embTexto(o, un, global){
   if (global) return "valor global";
   if (temRend(o)) return `${brl(num(o.preco))} / ${o.unidVenda || "unid."} · ${rendTxt(o, un)}`;
@@ -1616,20 +1621,22 @@ function abaFornecedores(){
         <label class="info" style="cursor:pointer" title="Informe conteúdo e rendimento da ficha técnica; o sistema calcula quanto cada embalagem cobre"><input type="checkbox" data-rendins="${ki}" ${ins.usaRend ? "checked" : ""}> Calcular pelo rendimento</label>
         ${usados.has(ins.id) ? "" : `<span class="info" style="color:var(--warn)">sem uso nos quantitativos</span><button class="icon del" data-act="delIns" data-k="${ki}" aria-label="Excluir insumo">✕</button>`}</div>
       ${linhas.length ? `<table class="ofertas"><thead><tr><th style="width:150px">Fornecedor</th><th>Linha / produto</th><th class="r" style="width:120px">Preço cotado (R$)</th><th style="width:150px">Unidade de venda</th>${RD
-          ? `<th class="r" style="width:86px">Conteúdo</th><th style="width:64px">Un.</th><th class="r" style="width:86px">Rendimento</th><th style="width:185px">Tipo</th><th class="r" style="width:96px">Cobre (${esc(un)})</th>`
+          ? `<th style="width:222px">Tipo de rendimento</th><th class="r" style="width:96px">Rendimento</th><th class="r" style="width:80px">Conteúdo</th><th style="width:60px">Un.</th><th class="r" style="width:96px">Cobre (${esc(un)})</th>`
           : `<th class="r" style="width:110px">Contém (${esc(un)})</th>`}<th class="r" style="width:130px">Preço por ${esc(un)}</th><th style="width:76px">Imagem</th><th style="width:34px"></th></tr></thead><tbody>
         ${linhas.map(({ o, oi, f }) => { const novoF = f.id !== ultimoF; ultimoF = f.id;
           return `<tr class="${novoF ? "sep" : ""}"><td class="forn-nome">${novoF ? esc(f.nome || "Sem nome") : ""}</td>
             <td><input data-bind="ofertas.${oi}.linha" value="${esc(o.linha)}" placeholder="Ex.: ROCA - VASO ZIP PLUS" aria-label="Linha"></td>
             <td><input class="r" data-bind="ofertas.${oi}.preco" data-tipo="num" inputmode="decimal" value="${esc(inVal(o.preco))}" placeholder="0,00" aria-label="Preço cotado"></td>
             <td><input list="dlEmb" data-bind="ofertas.${oi}.unidVenda" data-emb="${oi}" value="${esc(o.unidVenda)}" placeholder="${esc(un)}" aria-label="Unidade de venda"></td>
-            ${RD ? `<td><input class="r" data-bind="ofertas.${oi}.conteudo" data-tipo="num" inputmode="decimal" value="${esc(inVal(o.conteudo))}" placeholder="Ex.: 20" aria-label="Conteúdo da embalagem"></td>
-              <td><input data-bind="ofertas.${oi}.conteudoUn" value="${esc(o.conteudoUn || "")}" placeholder="kg / L" aria-label="Unidade do conteúdo"></td>
-              <td><input class="r" data-bind="ofertas.${oi}.rend" data-tipo="num" inputmode="decimal" value="${esc(inVal(o.rend))}" placeholder="ficha técnica" aria-label="Rendimento"></td>
-              <td><select data-bind="ofertas.${oi}.rendTipo" aria-label="Tipo de rendimento">
-                <option value="rende" ${o.rendTipo !== "consumo" ? "selected" : ""}>rende (${esc(un)} por ${esc(o.conteudoUn || "kg/L")})</option>
-                <option value="consumo" ${o.rendTipo === "consumo" ? "selected" : ""}>consumo (${esc(o.conteudoUn || "kg/L")} por ${esc(un)})</option></select></td>
-              <td class="calc" data-cobre="${oi}">${temRend(o) ? qtdF(cobreDe(o)) : `<input class="r" data-bind="ofertas.${oi}.contem" data-tipo="num" inputmode="decimal" value="${esc(inVal(o.contem))}" placeholder="1" title="Sem rendimento: informe quanto a embalagem cobre" aria-label="Cobertura da embalagem">`}</td>`
+            ${RD ? (() => { const tp = tipoRend(o), emb = tp === "embalagem";
+              return `<td><select class="rend-tipo" data-bind="ofertas.${oi}.rendTipo" aria-label="Tipo de rendimento">
+                <option value="embalagem" ${tp === "embalagem" ? "selected" : ""}>cobre por embalagem (${esc(un)})</option>
+                <option value="rende" ${tp === "rende" ? "selected" : ""}>rende por kg ou L (${esc(un)}/kg)</option>
+                <option value="consumo" ${tp === "consumo" ? "selected" : ""}>consumo (kg ou L por ${esc(un)})</option></select></td>
+              <td><input class="r" data-bind="ofertas.${oi}.rend" data-tipo="num" inputmode="decimal" value="${esc(inVal(o.rend))}" placeholder="${emb ? `${esc(un)} da ficha` : "ficha técnica"}" aria-label="Rendimento"></td>
+              <td>${emb ? `<span class="nao-usa" title="Não é usado quando a ficha informa quanto a embalagem cobre">—</span>` : `<input class="r" data-bind="ofertas.${oi}.conteudo" data-tipo="num" inputmode="decimal" value="${esc(inVal(o.conteudo))}" placeholder="Ex.: 20" aria-label="Conteúdo da embalagem">`}</td>
+              <td>${emb ? `<span class="nao-usa">—</span>` : `<input data-bind="ofertas.${oi}.conteudoUn" value="${esc(o.conteudoUn || "")}" placeholder="kg / L" aria-label="Unidade do conteúdo">`}</td>
+              <td class="calc" data-cobre="${oi}">${temRend(o) ? qtdF(cobreDe(o)) : `<input class="r" data-bind="ofertas.${oi}.contem" data-tipo="num" inputmode="decimal" value="${esc(inVal(o.contem))}" placeholder="1" title="Sem rendimento: informe quanto a embalagem cobre" aria-label="Cobertura da embalagem">`}</td>`; })()
             : `<td><input class="r" data-bind="ofertas.${oi}.contem" data-tipo="num" inputmode="decimal" value="${esc(inVal(o.contem))}" placeholder="1" aria-label="Conteúdo da unidade de venda"></td>`}
             <td class="calc" data-pu="${oi}">${brl(precoUn(o))}${num(o.contem) > 1 ? `<small>${qtdF(Math.ceil(qtd / num(o.contem) - 1e-9))} ${esc(o.unidVenda || "unid.")} p/ pedido</small>` : ""}</td>
             <td>${o.imagemId ? `<button class="thumb-btn" data-act="imgOferta" data-o="${oi}" title="Ver ou trocar a imagem">${thumb(o.imagemId)}</button>`
@@ -1643,7 +1650,7 @@ function abaFornecedores(){
   }).join("");
 
   return `<div class="wrap" style="max-width:1400px">
-    <div class="bar"><div><h2>Fornecedores e preços</h2></div><div class="spacer"></div>${filtroFornecedores()}<button class="btn primary" data-act="addF">+ Fornecedor</button></div>
+    <div class="bar"><div><h2>Fornecedores e preços</h2></div><div class="spacer"></div>${filtroFornecedores()}<button class="btn" data-act="importarPrecos" title="Trazer fornecedores, linhas cotadas e preços de outra QQP">Importar de outra QQP</button><button class="btn primary" data-act="addF">+ Fornecedor</button></div>
     <p class="lead">A ordem dos fornecedores aqui é a ordem das colunas no comparativo. Prazo e pagamento aparecem no cabeçalho de cada fornecedor no comparativo.</p>
     ${F.length ? `<div class="forns">${boxes}</div>` : `<div class="vazio" style="margin-bottom:24px"><h3>Nenhum fornecedor ainda</h3><p>Adicione os fornecedores participantes da concorrência.</p><button class="btn primary" data-act="addF">+ Fornecedor</button></div>`}
     <div class="bar"><h2 style="margin:0">Preços por insumo</h2><div class="spacer"></div><button class="btn" data-act="colarOfertas">Colar do Excel</button></div>
@@ -1725,8 +1732,11 @@ function renderAba(){
   if (S.view !== "qqp") return render();
   const sc = guardarScroll(); const aberto = document.getElementById("filtroF")?.open;
   const main = document.getElementById("main"); if (!main) return render();
+  // devolve o foco ao mesmo campo depois de redesenhar (ex.: trocar uma opção com o teclado)
+  const ativo = document.activeElement, focoBind = main.contains(ativo) ? ativo.dataset?.bind : null;
   main.innerHTML = conteudoAba(); restaurarScroll(sc); ajustarCabecalhos(); posRender();
   if (aberto){ const d = document.getElementById("filtroF"); if (d) d.open = true; }
+  if (focoBind){ const el = main.querySelector(`[data-bind="${CSS.escape(focoBind)}"]`); if (el && !el.disabled) el.focus({ preventScroll: true }); }
 }
 function atualizarCalculos(){
   const R = calc(S.q);
@@ -1806,6 +1816,7 @@ app.addEventListener("change", e => {
       const ins = q.insumos[+d.rendins];
       if (!t.checked && q.ofertas.some(o => o.insumoId === ins.id && temRend(o)) && !confirm("Desligar o rendimento deste insumo? A cobertura calculada fica no campo Contém, e os dados de conteúdo e rendimento são apagados.")){ t.checked = true; return; }
       ins.usaRend = t.checked;
+      if (t.checked) q.ofertas.filter(o => o.insumoId === ins.id && !o.rendTipo && !num(o.rend)).forEach(o => o.rendTipo = "embalagem");
       if (!t.checked) q.ofertas.filter(o => o.insumoId === ins.id).forEach(o => { delete o.conteudo; delete o.conteudoUn; delete o.rend; delete o.rendTipo; });
       marcarAlterado(); renderAba(); return;
     }
@@ -2054,7 +2065,7 @@ async function executar(a, d, e){
     case "addAj": q.fornecedores[+d.f].ajustes.outros.push({ desc: "", valor: null }); mudou(); break;
     case "delAj": q.fornecedores[+d.f].ajustes.outros.splice(ii, 1); mudou(); break;
     case "addOf": { const ins = q.insumos[+d.k]; const fid = document.getElementById("addOfF" + d.k)?.value; if (!fid) return;
-      q.ofertas.push({ id: uid(), insumoId: ins.id, fornId: fid, linha: "", preco: null, unidVenda: "", contem: null });
+      q.ofertas.push({ id: uid(), insumoId: ins.id, fornId: fid, linha: "", preco: null, unidVenda: "", contem: null, ...(ins.usaRend ? { rendTipo: "embalagem" } : {}) });
       // mantém as linhas agrupadas por fornecedor na ordem das colunas
       const ordem = Object.fromEntries(q.fornecedores.map((f, i) => [f.id, i]));
       q.ofertas = q.ofertas.map((o, i) => ({ o, i })).sort((a, b) => (a.o.insumoId === b.o.insumoId ? (ordem[a.o.fornId] - ordem[b.o.fornId]) || (a.i - b.i) : a.i - b.i)).map(x => x.o);
@@ -2063,6 +2074,7 @@ async function executar(a, d, e){
     case "delOf": { const o = q.ofertas[+d.o]; q.ofertas.splice(+d.o, 1); todosItens(q).forEach(i => { if (i.escolhas[o.fornId] === o.id) delete i.escolhas[o.fornId]; }); mudou(); break; }
     case "delIns": delete q.decisao[q.insumos[+d.k]?.id]; q.insumos.splice(+d.k, 1); q.ofertas = q.ofertas.filter(o => q.insumos.some(i => i.id === o.insumoId)); mudou(); break;
     case "colarOfertas": modalColarOfertas(); break;
+    case "importarPrecos": modalImportarPrecos(); break;
     case "trazerModelo": {
       const m = modeloPorId(q.modeloId) || S.modelos.find(x => chave(x.nome) === chave(q.pacote));
       if (!m) return alert("O modelo desta carteira não existe mais no cadastro.");
@@ -2416,6 +2428,76 @@ async function exportarExcel(){
   const nome = `Mapa_cotacao_${q.codigoCompra || q.pacote}_${q.revisao}_${o?.nome || ""}`.replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, "_");
   const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
   a.download = nome + ".xlsx"; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+}
+
+/* ---------------- importar fornecedores e preços de outra QQP ---------------- */
+async function modalImportarPrecos(){
+  const q = S.q;
+  const { bg, fechar } = abrirModal(`<h3>Importar de outra QQP</h3>
+    <p>Traz fornecedores, linhas cotadas e preços. Os insumos são ligados pelo nome: se o nome for igual ao de um insumo desta QQP, os preços entram nele. Quantitativos, escolhas e decisão de compra não são copiados.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="field"><label for="ipObra">Obra</label><select id="ipObra">${S.obras.map(o => `<option value="${o.id}" ${o.id === S.obraId ? "selected" : ""}>${esc(o.nome)}</option>`).join("")}</select></div>
+      <div class="field"><label for="ipQqp">QQP</label><select id="ipQqp"><option>Carregando…</option></select></div></div>
+    <div id="ipResumo" style="font-size:14px;color:var(--muted);margin-bottom:8px"></div>
+    <label class="checkline"><input type="checkbox" id="ipForn" checked> Fornecedores: ficha, condições e ajustes</label>
+    <label class="checkline"><input type="checkbox" id="ipLinhas" checked> Linhas cotadas e preços (com embalagem e rendimento)</label>
+    <label class="checkline"><input type="checkbox" id="ipImg" checked> Imagens das linhas cotadas</label>
+    <label class="checkline"><input type="checkbox" id="ipNovos" checked> Criar os insumos que ainda não existem nesta QQP (ficam sem uso até você lançar o mesmo nome em Quantitativos)</label>
+    <div class="acts"><button class="btn" data-fechar>Cancelar</button><button class="btn primary" id="ipOk" disabled>Importar</button></div>`);
+  bg.querySelector(".modal").style.width = "min(640px,100%)";
+  let lista = [];
+  const selObra = bg.querySelector("#ipObra"), selQ = bg.querySelector("#ipQqp"), ok = bg.querySelector("#ipOk");
+  const resumo = () => {
+    const src = lista.find(x => x.id === selQ.value); if (!src){ bg.querySelector("#ipResumo").textContent = ""; ok.disabled = true; return; }
+    const nomes = new Set(q.insumos.map(i => chave(i.nome)));
+    const insSrc = (src.insumos || []).filter(i => (src.ofertas || []).some(o => o.insumoId === i.id));
+    const iguais = insSrc.filter(i => nomes.has(chave(i.nome))).length;
+    bg.querySelector("#ipResumo").innerHTML = `${(src.fornecedores || []).length} fornecedor(es), ${(src.ofertas || []).length} linha(s) cotada(s) em ${insSrc.length} insumo(s): <b>${iguais}</b> com o mesmo nome de um insumo desta QQP, <b>${insSrc.length - iguais}</b> novo(s).`;
+    ok.disabled = false;
+  };
+  const carregar = async () => {
+    selQ.innerHTML = `<option>Carregando…</option>`; ok.disabled = true;
+    try {
+      const snap = await getDocs(query(collection(db, C_QQP), where("obraId", "==", selObra.value)));
+      lista = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(x => x.id !== S.id && (x.ofertas || []).length);
+      selQ.innerHTML = lista.length ? lista.map(x => `<option value="${x.id}">${esc(`${x.pacote} ${x.revisao}`)} · ${(x.fornecedores || []).length} forn.</option>`).join("") : `<option value="">Nenhuma QQP com preços nesta obra</option>`;
+    } catch (ex){ selQ.innerHTML = `<option value="">Erro ao carregar: ${esc(ex.message)}</option>`; }
+    resumo();
+  };
+  selObra.onchange = carregar; selQ.onchange = resumo; carregar();
+  ok.onclick = async () => {
+    const src = normalizarQQP(clone(semMeta({ ...lista.find(x => x.id === selQ.value), atualizadoEm: null })));
+    const comForn = bg.querySelector("#ipForn").checked, comLinhas = bg.querySelector("#ipLinhas").checked, comImg = bg.querySelector("#ipImg").checked, criar = bg.querySelector("#ipNovos").checked;
+    ok.disabled = true; ok.textContent = "Importando…";
+    const mapaF = {}; let nf = 0, nfAtual = 0;
+    for (const f of src.fornecedores){
+      let alvo = q.fornecedores.find(x => chave(x.nome) === chave(f.nome));
+      if (!alvo){ if (!comForn && !comLinhas) continue; alvo = { ...clone(f), id: uid() }; if (!comForn){ alvo = { id: alvo.id, nome: f.nome, ajustes: { outros: [] } }; } q.fornecedores.push(alvo); nf++; }
+      else if (comForn){ for (const [k, v] of Object.entries(f)) if (k !== "id" && k !== "ajustes" && (alvo[k] === undefined || alvo[k] === "" || alvo[k] === null)) alvo[k] = clone(v); nfAtual++; }
+      mapaF[f.id] = alvo.id;
+    }
+    let nl = 0, na = 0, ni = 0, nimg = 0;
+    if (comLinhas){
+      const mapaI = {};
+      for (const i of src.insumos){
+        if (!src.ofertas.some(o => o.insumoId === i.id)) continue;
+        let alvo = q.insumos.find(x => chave(x.nome) === chave(i.nome));
+        if (!alvo && criar){ alvo = { id: uid(), nome: i.nome, unidade: i.unidade || "", codigo: i.codigo || "" }; q.insumos.push(alvo); ni++; }
+        if (alvo){ if (i.usaRend) alvo.usaRend = true; if (!alvo.codigo && i.codigo) alvo.codigo = i.codigo; mapaI[i.id] = alvo.id; }
+      }
+      for (const o of src.ofertas){
+        const iid = mapaI[o.insumoId], fid = mapaF[o.fornId]; if (!iid || !fid) continue;
+        const { id, insumoId, fornId, imagemId, imagemArquivada, ...dados } = clone(o);
+        let novaImg = null;
+        if (comImg && imagemId){ try { const u = await obterImagem(imagemId); if (u){ novaImg = uid(); S.imgPend[novaImg] = u; nimg++; } } catch (e){ console.warn(e); } }
+        const ex = q.ofertas.find(x => x.insumoId === iid && x.fornId === fid && chave(x.linha) === chave(o.linha));
+        if (ex){ Object.assign(ex, dados); if (novaImg){ ex.imagemId = novaImg; delete ex.imagemArquivada; } na++; }
+        else { q.ofertas.push({ id: uid(), insumoId: iid, fornId: fid, ...dados, ...(novaImg ? { imagemId: novaImg } : {}) }); nl++; }
+      }
+    }
+    fechar(); marcarAlterado(); renderAba();
+    toast(`Importado: ${nf} fornecedor(es) novo(s)${nfAtual ? `, ${nfAtual} completado(s)` : ""}, ${nl} linha(s) nova(s)${na ? `, ${na} atualizada(s)` : ""}${ni ? `, ${ni} insumo(s) criado(s)` : ""}${nimg ? `, ${nimg} imagem(ns)` : ""}. Salve a QQP para manter.`, 6000);
+  };
 }
 
 /* gancho de teste local (sem efeito em produção) */
