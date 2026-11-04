@@ -1385,8 +1385,15 @@ function selectEscolha(q, it, f, I, dataAttr){
     ${ops.map(o => `<option value="${o.id}" ${o.id === sel ? "selected" : ""}>${esc(o.linha || "(sem nome)")}</option>`).join("")}
     <option value="__none" ${sel === "__none" ? "selected" : ""}>Não considerar</option></select>`;
 }
+/* rendimento (ficha técnica): opcional por insumo */
+const temRend = o => num(o.rend) > 0 && num(o.conteudo) > 0;
+const cobreDe = o => o.rendTipo === "consumo" ? num(o.conteudo) / num(o.rend) : num(o.conteudo) * num(o.rend);
+function sincRend(o){ if (o && temRend(o)) o.contem = Math.round(cobreDe(o) * 10000) / 10000; }
+function rendCurto(o, un){ const cu = o.conteudoUn || "un."; return o.rendTipo === "consumo" ? `consumo ${qtdF(num(o.rend))} ${cu}/${un}` : `rende ${qtdF(num(o.rend))} ${un}/${cu}`; }
+function rendTxt(o, un){ return temRend(o) ? `${qtdF(num(o.conteudo))} ${o.conteudoUn || "un."} · ${rendCurto(o, un)} = ${qtdF(cobreDe(o))} ${un}` : ""; }
 function embTexto(o, un, global){
   if (global) return "valor global";
+  if (temRend(o)) return `${brl(num(o.preco))} / ${o.unidVenda || "unid."} · ${rendTxt(o, un)}`;
   const c = num(o.contem) || 1;
   if (!o.unidVenda && c === 1) return "";
   return `${brl(num(o.preco))} / ${o.unidVenda || "unid."}${c !== 1 ? ` (${qtdF(c)} ${un})` : ""}`;
@@ -1600,19 +1607,30 @@ function abaFornecedores(){
     FV.forEach(f => q.ofertas.forEach((o, oi) => { if (o.insumoId === ins.id && o.fornId === f.id) linhas.push({ o, oi, f }); }));
     const qtd = R.insumos.get(ins.id)?.qtd || 0;
     let ultimoF = null;
+    const RD = !!ins.usaRend;
     return `<div class="insumo-bloco">
       <div class="cab"><input class="nome" data-bind="insumos.${ki}.nome" value="${esc(ins.nome)}" aria-label="Nome do insumo">
         <span class="info">Cód. Sienge <input class="un" style="width:80px" data-bind="insumos.${ki}.codigo" value="${esc(ins.codigo || "")}" aria-label="Código Sienge"></span>
         <span class="info">Unidade <input class="un" data-bind="insumos.${ki}.unidade" value="${esc(ins.unidade || "")}" placeholder="${esc(q.modelo.unidade || "un")}" aria-label="Unidade do insumo"></span>
         <span class="info">Qtd total <b>${qtdF(qtd)} ${esc(un)}</b></span>
+        <label class="info" style="cursor:pointer" title="Informe conteúdo e rendimento da ficha técnica; o sistema calcula quanto cada embalagem cobre"><input type="checkbox" data-rendins="${ki}" ${ins.usaRend ? "checked" : ""}> Calcular pelo rendimento</label>
         ${usados.has(ins.id) ? "" : `<span class="info" style="color:var(--warn)">sem uso nos quantitativos</span><button class="icon del" data-act="delIns" data-k="${ki}" aria-label="Excluir insumo">✕</button>`}</div>
-      ${linhas.length ? `<table class="ofertas"><thead><tr><th style="width:150px">Fornecedor</th><th>Linha / produto</th><th class="r" style="width:120px">Preço cotado (R$)</th><th style="width:150px">Unidade de venda</th><th class="r" style="width:110px">Contém (${esc(un)})</th><th class="r" style="width:130px">Preço por ${esc(un)}</th><th style="width:76px">Imagem</th><th style="width:34px"></th></tr></thead><tbody>
+      ${linhas.length ? `<table class="ofertas"><thead><tr><th style="width:150px">Fornecedor</th><th>Linha / produto</th><th class="r" style="width:120px">Preço cotado (R$)</th><th style="width:150px">Unidade de venda</th>${RD
+          ? `<th class="r" style="width:86px">Conteúdo</th><th style="width:64px">Un.</th><th class="r" style="width:86px">Rendimento</th><th style="width:185px">Tipo</th><th class="r" style="width:96px">Cobre (${esc(un)})</th>`
+          : `<th class="r" style="width:110px">Contém (${esc(un)})</th>`}<th class="r" style="width:130px">Preço por ${esc(un)}</th><th style="width:76px">Imagem</th><th style="width:34px"></th></tr></thead><tbody>
         ${linhas.map(({ o, oi, f }) => { const novoF = f.id !== ultimoF; ultimoF = f.id;
           return `<tr class="${novoF ? "sep" : ""}"><td class="forn-nome">${novoF ? esc(f.nome || "Sem nome") : ""}</td>
             <td><input data-bind="ofertas.${oi}.linha" value="${esc(o.linha)}" placeholder="Ex.: ROCA - VASO ZIP PLUS" aria-label="Linha"></td>
             <td><input class="r" data-bind="ofertas.${oi}.preco" data-tipo="num" inputmode="decimal" value="${esc(inVal(o.preco))}" placeholder="0,00" aria-label="Preço cotado"></td>
             <td><input list="dlEmb" data-bind="ofertas.${oi}.unidVenda" data-emb="${oi}" value="${esc(o.unidVenda)}" placeholder="${esc(un)}" aria-label="Unidade de venda"></td>
-            <td><input class="r" data-bind="ofertas.${oi}.contem" data-tipo="num" inputmode="decimal" value="${esc(inVal(o.contem))}" placeholder="1" aria-label="Conteúdo da unidade de venda"></td>
+            ${RD ? `<td><input class="r" data-bind="ofertas.${oi}.conteudo" data-tipo="num" inputmode="decimal" value="${esc(inVal(o.conteudo))}" placeholder="Ex.: 20" aria-label="Conteúdo da embalagem"></td>
+              <td><input data-bind="ofertas.${oi}.conteudoUn" value="${esc(o.conteudoUn || "")}" placeholder="kg / L" aria-label="Unidade do conteúdo"></td>
+              <td><input class="r" data-bind="ofertas.${oi}.rend" data-tipo="num" inputmode="decimal" value="${esc(inVal(o.rend))}" placeholder="ficha técnica" aria-label="Rendimento"></td>
+              <td><select data-bind="ofertas.${oi}.rendTipo" aria-label="Tipo de rendimento">
+                <option value="rende" ${o.rendTipo !== "consumo" ? "selected" : ""}>rende (${esc(un)} por ${esc(o.conteudoUn || "kg/L")})</option>
+                <option value="consumo" ${o.rendTipo === "consumo" ? "selected" : ""}>consumo (${esc(o.conteudoUn || "kg/L")} por ${esc(un)})</option></select></td>
+              <td class="calc" data-cobre="${oi}">${temRend(o) ? qtdF(cobreDe(o)) : `<input class="r" data-bind="ofertas.${oi}.contem" data-tipo="num" inputmode="decimal" value="${esc(inVal(o.contem))}" placeholder="1" title="Sem rendimento: informe quanto a embalagem cobre" aria-label="Cobertura da embalagem">`}</td>`
+            : `<td><input class="r" data-bind="ofertas.${oi}.contem" data-tipo="num" inputmode="decimal" value="${esc(inVal(o.contem))}" placeholder="1" aria-label="Conteúdo da unidade de venda"></td>`}
             <td class="calc" data-pu="${oi}">${brl(precoUn(o))}${num(o.contem) > 1 ? `<small>${qtdF(Math.ceil(qtd / num(o.contem) - 1e-9))} ${esc(o.unidVenda || "unid.")} p/ pedido</small>` : ""}</td>
             <td>${o.imagemId ? `<button class="thumb-btn" data-act="imgOferta" data-o="${oi}" title="Ver ou trocar a imagem">${thumb(o.imagemId)}</button>`
               : o.imagemArquivada ? `<button class="bat-btn" data-act="imgOferta" data-o="${oi}" title="A imagem foi apagada do banco e está no relatório final">arquivada</button>`
@@ -1629,7 +1647,7 @@ function abaFornecedores(){
     <p class="lead">A ordem dos fornecedores aqui é a ordem das colunas no comparativo. Prazo e pagamento aparecem no cabeçalho de cada fornecedor no comparativo.</p>
     ${F.length ? `<div class="forns">${boxes}</div>` : `<div class="vazio" style="margin-bottom:24px"><h3>Nenhum fornecedor ainda</h3><p>Adicione os fornecedores participantes da concorrência.</p><button class="btn primary" data-act="addF">+ Fornecedor</button></div>`}
     <div class="bar"><h2 style="margin:0">Preços por insumo</h2><div class="spacer"></div><button class="btn" data-act="colarOfertas">Colar do Excel</button></div>
-    <p class="lead">Cada fornecedor pode ter várias linhas para o mesmo insumo; a escolha é feita no comparativo. Informe o preço como está na proposta e quanto a unidade de venda contém (ex.: saco 28 kg contém 28), que o sistema converte para a unidade do insumo.</p>
+    <p class="lead">Para massas, tintas e similares, marque "Calcular pelo rendimento" no insumo: informe o conteúdo da embalagem e o rendimento da ficha técnica, e o sistema calcula quanto ela cobre e o preço por unidade do insumo. Cada fornecedor pode ter várias linhas para o mesmo insumo; a escolha é feita no comparativo. Informe o preço como está na proposta e quanto a unidade de venda contém (ex.: saco 28 kg contém 28), que o sistema converte para a unidade do insumo.</p>
     <datalist id="dlEmb">${S.embalagens.map(e => `<option value="${esc(e.nome)}">${esc(e.nome)} (contém ${qtdF(e.contem)})</option>`).join("")}</datalist>
     ${q.insumos.length ? blocos : `<div class="vazio"><h3>Nenhum insumo ainda</h3><p>Os insumos são criados ao preencher a coluna de insumo em Quantitativos.</p><button class="btn" data-act="tab" data-tab="quant">Ir para Quantitativos</button></div>`}
   </div>`;
@@ -1758,7 +1776,11 @@ const travada = () => S.view === "qqp" && S.q?.status === "finalizada";
 app.addEventListener("input", e => {
   const t = e.target, d = t.dataset;
   if (travada()) return;
-  if (d.bind && S.q){ setPath(S.q, d.bind, d.tipo === "num" ? parseIn(t.value) : t.value); marcarAlterado(); atualizarCalculos(); return; }
+  if (d.bind && S.q){ setPath(S.q, d.bind, d.tipo === "num" ? parseIn(t.value) : t.value); marcarAlterado();
+    const mr = /^ofertas\.(\d+)\.(conteudo|rend|conteudoUn)$/.exec(d.bind);
+    if (mr){ const o = S.q.ofertas[+mr[1]]; sincRend(o); const cel = document.querySelector(`[data-cobre="${mr[1]}"]`);
+      if (cel && temRend(o)) cel.textContent = qtdF(cobreDe(o)); }
+    atualizarCalculos(); return; }
   if (d.obind && S.obraEdit){ setPath(S.obraEdit, d.obind, d.tipo === "num" ? parseIn(t.value) : t.value); S.obraDirty = true; return; }
   if (d.mbind && S.modeloEdit){
     setPath(S.modeloEdit, d.mbind, d.tipo === "num" ? parseIn(t.value) : t.value); S.modeloDirty = true;
@@ -1780,7 +1802,14 @@ app.addEventListener("change", e => {
   if (travada() && !d.filtro) return;
   if (S.view === "qqp" && S.q){
     const q = S.q;
-    if (d.bind && t.tagName === "SELECT"){ renderAba(); return; }
+    if (d.rendins !== undefined){
+      const ins = q.insumos[+d.rendins];
+      if (!t.checked && q.ofertas.some(o => o.insumoId === ins.id && temRend(o)) && !confirm("Desligar o rendimento deste insumo? A cobertura calculada fica no campo Contém, e os dados de conteúdo e rendimento são apagados.")){ t.checked = true; return; }
+      ins.usaRend = t.checked;
+      if (!t.checked) q.ofertas.filter(o => o.insumoId === ins.id).forEach(o => { delete o.conteudo; delete o.conteudoUn; delete o.rend; delete o.rendTipo; });
+      marcarAlterado(); renderAba(); return;
+    }
+    if (d.bind && t.tagName === "SELECT"){ const mt = /^ofertas\.(\d+)\.rendTipo$/.exec(d.bind); if (mt) sincRend(q.ofertas[+mt[1]]); renderAba(); return; }
     if (d.emb !== undefined){
       const o = q.ofertas[+d.emb]; const e2 = S.embalagens.find(x => chave(x.nome) === chave(t.value));
       if (e2 && (!num(o.contem) || num(o.contem) === 1)){
@@ -2349,7 +2378,7 @@ function montarDetalhado(wb, q, R, F, o){
       for (const it of p.itens){
         const I = R.itens[it.id], ins = insumoDe(q, it.insumoId), un = unidadeInsumo(q, ins);
         L.push([3, ins?.nome || "", ...D.map(x => it.desc[x.id] || ""), ...(GR ? [I.partes?.tipo || ""] : []), ...C.map(c => it.global ? "" : num(I.vars[c.chave])), it.global ? "VG" : I.qtd, un,
-          ...F.flatMap(f => { const x = I.por[f.id]; return x.o ? [x.o.linha, x.o.unidVenda ? `${x.o.unidVenda} (${qtdF(num(x.o.contem) || 1)} ${un})` : "", x.unit, x.total] : ["-", "", "", ""]; }),
+          ...F.flatMap(f => { const x = I.por[f.id]; return x.o ? [x.o.linha, x.o.unidVenda ? `${x.o.unidVenda} (${temRend(x.o) ? rendTxt(x.o, un) : `${qtdF(num(x.o.contem) || 1)} ${un}`})` : "", x.unit, x.total] : ["-", "", "", ""]; }),
           I.orc || "", I.orc ? I.orc * R.fator : ""]);
       }
     }
@@ -2724,9 +2753,9 @@ async function gerarPDF(){
         ty += 4.5; doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...TINTA);
         const linhaTxt = doc.splitTextToSize(T(op.linha || "-"), cwid - 6).slice(0, 2); doc.text(linhaTxt, x + 3, ty); ty += linhaTxt.length * 3.4;
         doc.setTextColor(...CINZA); doc.setFontSize(7.5);
-        const emb = !glob && (op.unidVenda || num(op.contem) > 1) ? ` (${brl(num(op.preco))} / ${op.unidVenda || "unid."}${num(op.contem) > 1 ? ` c/ ${qtdF(num(op.contem))}` : ""})` : "";
-        doc.text(T(`${brl(precoUn(op, glob))}${glob ? "" : ` / ${ins.un}`}${emb}`), x + 3, ty, { maxWidth: cwid - 6 });
-        ty += 4; doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(...(menor ? VERDE : TINTA));
+        const emb = !glob && (op.unidVenda || num(op.contem) > 1) ? ` (${brl(num(op.preco))} / ${op.unidVenda || "unid."}${temRend(op) ? `, ${rendCurto(op, ins.un)}` : num(op.contem) > 1 ? ` c/ ${qtdF(num(op.contem))}` : ""})` : "";
+        const lp = doc.splitTextToSize(T(`${brl(precoUn(op, glob))}${glob ? "" : ` / ${ins.un}`}${emb}`), cwid - 6).slice(0, 2);
+        doc.text(lp, x + 3, ty); ty += 4 + (lp.length - 1) * 3.1; doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(...(menor ? VERDE : TINTA));
         doc.text(T(`Total ${brl(c.total)}`), x + 3, ty);
         if (!glob && cartoes.length > 1 && !menor && menorTot > 0){ doc.setFont("helvetica", "normal"); doc.setFontSize(7); doc.setTextColor(...CINZA); doc.text(T(`+${brl(c.total - menorTot)} em relação ao menor preço`), x + 3, ty + 3.8); }
       });
@@ -2761,9 +2790,9 @@ async function gerarPDF(){
     const lc = [];
     for (const ins of insumos) for (const f of F) for (const op of ofertasDe(q, ins.id, f.id)){
       const usos = ins.itens.filter(it => R.itens[it.id].por[f.id]?.o?.id === op.id).length;
-      lc.push([ins.nome, f.nome, op.linha || "", brl(num(op.preco)), op.unidVenda || "", num(op.contem) ? qtdF(num(op.contem)) : "1", brl(precoUn(op, ins.itens.every(i => i.global))), usos === 0 ? "não" : usos === ins.itens.length ? "sim" : `em ${usos} de ${ins.itens.length}`, op.imagemId ? "sim" : op.imagemArquivada ? "arquivada" : "-"]);
+      lc.push([ins.nome, f.nome, op.linha || "", brl(num(op.preco)), op.unidVenda || "", num(op.contem) ? qtdF(num(op.contem)) : "1", rendTxt(op, ins.un) || "-", brl(precoUn(op, ins.itens.every(i => i.global))), usos === 0 ? "não" : usos === ins.itens.length ? "sim" : `em ${usos} de ${ins.itens.length}`, op.imagemId ? "sim" : op.imagemArquivada ? "arquivada" : "-"]);
     }
-    if (lc.length) tabela({ head: [["Insumo", "Fornecedor", "Linha / produto", "Preço cotado", "Unid. venda", "Contém", "Preço por un.", "Escolhida", "Imagem"]], body: lc, columnStyles: { 3: { halign: "right" }, 5: { halign: "right" }, 6: { halign: "right" } } });
+    if (lc.length) tabela({ head: [["Insumo", "Fornecedor", "Linha / produto", "Preço cotado", "Unid. venda", "Contém / cobre", "Rendimento (ficha técnica)", "Preço por un.", "Escolhida", "Imagem"]], body: lc, columnStyles: { 3: { halign: "right" }, 5: { halign: "right" }, 7: { halign: "right" } } });
     else paragrafo("Nenhuma linha cotada.");
 
     secao("Anexo D · Ficha completa dos fornecedores");
