@@ -494,6 +494,7 @@ details.filtro label:hover{background:var(--sand)}
 .qtd-comprar b{font-size:18px;color:var(--primary)}
 .qtd-comprar .qc-un{font-weight:600;color:var(--ink)}
 .qtd-comprar .qc-sub{display:block;font-size:11px;color:var(--muted)}
+.rend-falta{display:block;font-size:10px;font-weight:600;color:var(--warn);text-align:right;margin-top:1px}
 .nao-usa{color:var(--faint);display:block;text-align:center}
 table.ofertas select.rend-tipo{min-width:212px}
 .bat-ok{color:var(--green);font-weight:700;font-size:13px}
@@ -798,7 +799,7 @@ function calc(q){
         const orcIt = it.orcValor == null ? 0 : (it.orcModo === "unit" ? num(it.orcValor) * qtd : num(it.orcValor));
         P.qtd += it.global ? 0 : qtd; G.qtd += it.global ? 0 : qtd;
         P.orc += orcIt; G.orc += orcIt;
-        const I = { qtd, base: qtdBase, persSoma, nPers: (it.pers || []).length, vars, orc: orcIt, por: {}, partes };
+        const I = { qtd, base: qtdBase, persSoma, nPers: (it.pers || []).length, vars, orc: orcIt, por: {}, partes, pid: p.id, gid: g.id };
         const ins = insumoDe(q, it.insumoId);
         const k = it.insumoId || "_sem";
         if (!R.insumos.has(k)) R.insumos.set(k, { id: it.insumoId, nome: ins?.nome || "(sem insumo)", un: unidadeInsumo(q, ins), qtd: 0, orc: 0, total: zero(), itens: [], escolhidas: {} });
@@ -830,6 +831,28 @@ function calc(q){
     }
     R.orc += G.orc;
   }
+  // valor por embalagens inteiras: arredonda no total do insumo (somando os pavimentos) e reparte a diferença entre as linhas
+  for (const INS of R.insumos.values()){
+    const insObj = insumoDe(q, INS.id);
+    if (!INS.id || !embInteira(insObj)) continue;
+    for (const f of F){
+      const grupos = new Map();
+      for (const it of INS.itens){ const x = R.itens[it.id]?.por[f.id]; if (x?.o && !it.global && num(x.o.contem) > 1){ if (!grupos.has(x.o.id)) grupos.set(x.o.id, { o: x.o, itens: [] }); grupos.get(x.o.id).itens.push(it); } }
+      for (const { o, itens } of grupos.values()){
+        const exato = itens.reduce((t, it) => t + R.itens[it.id].por[f.id].total, 0);
+        const qtdCob = itens.reduce((t, it) => t + R.itens[it.id].qtd, 0);
+        if (!(qtdCob > 0) || !(exato > 0)) continue;
+        const nEmb = Math.ceil(qtdCob / num(o.contem) - 1e-9), inteiro = nEmb * num(o.preco), dif = inteiro - exato;
+        if (Math.abs(dif) < 0.005) continue;
+        for (const it of itens){
+          const I = R.itens[it.id], x = I.por[f.id], parte = dif * (x.total / exato);
+          x.total += parte; x.arredondado = true;
+          for (const X of [R.n2[I.pid], R.grupos[I.gid], R, INS]) X.total[f.id].total += parte;
+        }
+      }
+    }
+  }
+  for (const I of Object.values(R.itens)){ const vals = F.filter(f => !S.ocultos.has(f.id)).map(f => I.por[f.id]).filter(x => x.o).map(x => x.total); I.min = vals.length > 1 ? Math.min(...vals) : null; }
   R.orcCorr = R.orc * fator;
   for (const f of F){
     const a = f.ajustes || {}, base = R.total[f.id].total;
@@ -1394,6 +1417,8 @@ function selectEscolha(q, it, f, I, dataAttr){
 }
 /* rendimento (ficha técnica): opcional por insumo */
 // tipos: "embalagem" (a ficha diz quanto a embalagem inteira cobre), "rende" (por kg ou L) e "consumo" (kg ou L por unidade do insumo)
+// valor por embalagens inteiras: padrão ligado quando o insumo usa rendimento
+const embInteira = ins => !!ins && (ins.embInteira ?? !!ins.usaRend);
 const tipoRend = o => o.rendTipo || (num(o.conteudo) > 0 ? "rende" : "embalagem");
 const temRend = o => num(o.rend) > 0 && (tipoRend(o) === "embalagem" || num(o.conteudo) > 0);
 const cobreDe = o => { const t = tipoRend(o); return t === "embalagem" ? num(o.rend) : t === "consumo" ? num(o.conteudo) / num(o.rend) : num(o.conteudo) * num(o.rend); };
@@ -1407,7 +1432,12 @@ function compraDe(o, qtd){
   const porCont = cont > 0 && cu ? num(o.preco) / cont : null;
   if (!(c > 0) || !(qtd > 0)) return { n: null, total: null, cu, porCont };
   const n = Math.max(0, Math.ceil(qtd / c - 1e-9));
-  return { n, emb: o.unidVenda || "unid.", total: cont > 0 && cu ? n * cont : null, cu, porCont };
+  return { n, emb: nomeEmb(o, n), total: cont > 0 && cu ? n * cont : null, cu, porCont };
+}
+function nomeEmb(o, n = 2){
+  const u = String(o.unidVenda || "").trim();
+  if (!u || /^(kg|g|l|lt|litros?|ml|m|m2|m²|m3|m³|un|und|unid\.?|p[çc])$/i.test(u)) return n === 1 ? "embalagem" : "embalagens";
+  return u;
 }
 // célula "Quantidade a comprar" da decisão: embalagens em destaque e o total em kg/L embaixo
 function qtdComprar(q, ins, esc_){
@@ -1472,7 +1502,7 @@ function corpoComp(q, R, F){
             const nEmb = !it.global && num(x.o.contem) > 1 ? Math.max(0, Math.ceil(I.qtd / num(x.o.contem) - 1e-9)) : null;
             return `<td class="bl"><div class="esc-wrap">${sel}${x.o.imagemId ? `<button class="thumb-btn mini" data-act="verImg" data-id="${x.o.id}" title="Ampliar imagem">${thumb(x.o.imagemId)}</button>` : ""}</div></td>
               <td class="n" title="${nEmb ? `Para o pedido: ${esc(compraTxt(x.o, I.qtd))}` : ""}">${brl(x.unit)}${emb ? `<span class="emb">${esc(emb)}</span>` : ""}</td>
-              <td class="n ${best ? "best" : ""}">${brl(x.total)}</td>`;
+              <td class="n ${best ? "best" : ""}" ${x.arredondado ? `title="Inclui a parte deste pavimento no arredondamento para embalagens inteiras do insumo"` : ""}>${brl(x.total)}</td>`;
           }).join("")}
           <td class="n bl">${I.orc ? brl(I.orc) : ""}</td><td class="n">${I.orc ? brl(I.orc * R.fator) : ""}</td></tr>`;
       }
@@ -1645,6 +1675,7 @@ function abaFornecedores(){
         <span class="info">Unidade <input class="un" data-bind="insumos.${ki}.unidade" value="${esc(ins.unidade || "")}" placeholder="${esc(q.modelo.unidade || "un")}" aria-label="Unidade do insumo"></span>
         <span class="info">Qtd total <b>${qtdF(qtd)} ${esc(un)}</b></span>
         <label class="info" style="cursor:pointer" title="Informe conteúdo e rendimento da ficha técnica; o sistema calcula quanto cada embalagem cobre"><input type="checkbox" data-rendins="${ki}" ${ins.usaRend ? "checked" : ""}> Calcular pelo rendimento</label>
+        <label class="info" style="cursor:pointer" title="O valor da compra considera embalagens inteiras (arredonda para cima a quantidade de baldes, latas, caixas)"><input type="checkbox" data-embins="${ki}" ${embInteira(ins) ? "checked" : ""}> Valor por embalagens inteiras</label>
         ${usados.has(ins.id) ? "" : `<span class="info" style="color:var(--warn)">sem uso nos quantitativos</span><button class="icon del" data-act="delIns" data-k="${ki}" aria-label="Excluir insumo">✕</button>`}</div>
       ${linhas.length ? `<table class="ofertas"><thead><tr><th style="width:150px">Fornecedor</th><th>Linha / produto</th><th class="r" style="width:120px">Preço cotado (R$)</th><th style="width:150px">Unidade de venda</th>${RD
           ? `<th style="width:222px">Tipo de rendimento</th><th class="r" style="width:96px">Rendimento</th><th class="r" style="width:80px">Conteúdo</th><th style="width:60px">Un.</th><th class="r" style="width:96px">Cobre (${esc(un)})</th>`
@@ -1662,7 +1693,7 @@ function abaFornecedores(){
               <td><input class="r" data-bind="ofertas.${oi}.rend" data-tipo="num" inputmode="decimal" value="${esc(inVal(o.rend))}" placeholder="${emb ? `${esc(un)} da ficha` : "ficha técnica"}" aria-label="Rendimento"></td>
               <td><input class="r" data-bind="ofertas.${oi}.conteudo" data-tipo="num" inputmode="decimal" value="${esc(inVal(o.conteudo))}" placeholder="${emb ? "opcional" : "Ex.: 20"}" ${emb ? `title="Opcional: informe para ver o preço e a compra em kg ou L"` : ""} aria-label="Conteúdo da embalagem"></td>
               <td><input data-bind="ofertas.${oi}.conteudoUn" value="${esc(o.conteudoUn || "")}" placeholder="kg / L" aria-label="Unidade do conteúdo"></td>
-              <td class="calc" data-cobre="${oi}">${temRend(o) ? qtdF(cobreDe(o)) : `<input class="r" data-bind="ofertas.${oi}.contem" data-tipo="num" inputmode="decimal" value="${esc(inVal(o.contem))}" placeholder="1" title="Sem rendimento: informe quanto a embalagem cobre" aria-label="Cobertura da embalagem">`}</td>`; })()
+              <td class="calc" data-cobre="${oi}">${temRend(o) ? qtdF(cobreDe(o)) : `<input class="r" data-bind="ofertas.${oi}.contem" data-tipo="num" inputmode="decimal" value="${esc(inVal(o.contem))}" placeholder="1" title="Rendimento não informado: este número está sendo usado como cobertura da embalagem" aria-label="Cobertura da embalagem" style="border-color:#E8C27A;background:var(--warn-bg)"><span class="rend-falta">sem rendimento</span>`}</td>`; })()
             : `<td><input class="r" data-bind="ofertas.${oi}.contem" data-tipo="num" inputmode="decimal" value="${esc(inVal(o.contem))}" placeholder="1" aria-label="Conteúdo da unidade de venda"></td>`}
             <td class="calc" data-pu="${oi}">${htmlPu(o, qtd)}</td>
             <td>${o.imagemId ? `<button class="thumb-btn" data-act="imgOferta" data-o="${oi}" title="Ver ou trocar a imagem">${thumb(o.imagemId)}</button>`
@@ -1838,6 +1869,7 @@ app.addEventListener("change", e => {
   if (travada() && !d.filtro) return;
   if (S.view === "qqp" && S.q){
     const q = S.q;
+    if (d.embins !== undefined){ q.insumos[+d.embins].embInteira = t.checked; marcarAlterado(); renderAba(); return; }
     if (d.rendins !== undefined){
       const ins = q.insumos[+d.rendins];
       if (!t.checked && q.ofertas.some(o => o.insumoId === ins.id && temRend(o)) && !confirm("Desligar o rendimento deste insumo? A cobertura calculada fica no campo Contém, e os dados de conteúdo e rendimento são apagados.")){ t.checked = true; return; }
@@ -2643,6 +2675,8 @@ function pendencias(q, R = calc(q)){
   const insumos = [...R.insumos.values()].filter(x => x.id);
   const semCot = insumos.filter(x => F.every(f => x.total[f.id].total === 0)).map(x => x.nome);
   if (semCot.length) P.push(`Insumos sem nenhuma cotação: ${semCot.join(", ")}.`);
+  for (const ins of q.insumos.filter(i => i.usaRend)) q.ofertas.filter(o => o.insumoId === ins.id && !temRend(o)).forEach(o =>
+    P.push(`${ins.nome} · ${q.fornecedores.find(f => f.id === o.fornId)?.nome || ""} ${o.linha || ""}: rendimento não informado; está sendo usada a cobertura digitada (${qtdF(num(o.contem) || 1)} ${unidadeInsumo(q, ins)} por embalagem).`));
   const semDec = insumos.filter(x => !R.decisao.ins[x.id]).map(x => x.nome);
   if (semDec.length) P.push(`Insumos sem fornecedor definido na decisão de compra: ${semDec.join(", ")}.`);
   F.forEach(f => {
@@ -2842,7 +2876,7 @@ async function gerarPDF(){
       fs.forEach(f => {
         const escIds = new Set(ins.escolhidas[f.id] || []);
         ofertasDe(q, ins.id, f.id).slice().sort((a2, b2) => (escIds.has(b2.id) - escIds.has(a2.id)) || (precoUn(a2, glob) - precoUn(b2, glob)))
-          .forEach(op => cartoes.push({ f, op, sel: escIds.has(op.id), total: glob ? num(op.preco) : ins.qtd * precoUn(op, glob) }));
+          .forEach(op => cartoes.push({ f, op, sel: escIds.has(op.id), total: glob ? num(op.preco) : (embInteira(insumoDe(q, ins.id)) && num(op.contem) > 1 ? Math.ceil(ins.qtd / num(op.contem) - 1e-9) * num(op.preco) : ins.qtd * precoUn(op, glob)) }));
       });
       const menorTot = Math.min(...cartoes.map(c => c.total).filter(t => t > 0));
       cartoes.forEach((c, k) => {
