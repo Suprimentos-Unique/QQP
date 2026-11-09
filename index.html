@@ -495,6 +495,8 @@ details.filtro label:hover{background:var(--sand)}
 .qtd-comprar .qc-un{font-weight:600;color:var(--ink)}
 .qtd-comprar .qc-sub{display:block;font-size:11px;color:var(--muted)}
 .rend-falta{display:block;font-size:10px;font-weight:600;color:var(--warn);text-align:right;margin-top:1px}
+.vinc-tag{border:1px solid #DCC3C9;background:var(--primary-soft);color:var(--primary);border-radius:999px;font-size:11px;padding:1px 8px;white-space:nowrap;cursor:pointer;font-family:var(--font)}
+.vinc-tag:hover{border-color:var(--primary)}
 .nao-usa{color:var(--faint);display:block;text-align:center}
 table.ofertas select.rend-tipo{min-width:212px}
 .bat-ok{color:var(--green);font-weight:700;font-size:13px}
@@ -788,18 +790,28 @@ function calc(q){
     R.grupos[g.id] = G;
     for (const p of g.n2){
       const P = { total: zero(), qtd: 0, orc: 0 }; R.n2[p.id] = P;
+      // 1ª passada: quantidade final dos insumos não vinculados deste pavimento (base dos vínculos)
+      const qtdLivre = {};
+      for (const it of p.itens){
+        if (it.global || vincDe(q, it)) continue;
+        const v2 = { ...p.valores };
+        for (const [k, v] of Object.entries(it.valores || {})) if (v !== null && v !== "" && v !== undefined) v2[k] = v;
+        if (ehGranito(m)) v2.area_unit = areaGranito(m, it, v2).total;
+        qtdLivre[it.id] = (ast ? avaliar(ast, v2) : 0) + (it.pers || []).reduce((t, x) => t + num(x.qtd), 0);
+      }
       for (const it of p.itens){
         const vars = { ...p.valores };
         for (const [k, v] of Object.entries(it.valores || {})) if (v !== null && v !== "" && v !== undefined) vars[k] = v;
         let partes = null;
         if (ehGranito(m)){ partes = areaGranito(m, it, vars); vars.area_unit = partes.total; }
-        const qtdBase = it.global ? 1 : (ast ? avaliar(ast, vars) : 0);
+        const vinc = it.global ? null : vincDe(q, it);
+        const qtdBase = it.global ? 1 : vinc ? num(vinc.fator ?? 1) * p.itens.filter(x => x.insumoId === vinc.insumoId).reduce((t, x) => t + (qtdLivre[x.id] || 0), 0) : (ast ? avaliar(ast, vars) : 0);
         const persSoma = it.global ? 0 : (it.pers || []).reduce((t, x) => t + num(x.qtd), 0);
         const qtd = qtdBase + persSoma;
         const orcIt = it.orcValor == null ? 0 : (it.orcModo === "unit" ? num(it.orcValor) * qtd : num(it.orcValor));
         P.qtd += it.global ? 0 : qtd; G.qtd += it.global ? 0 : qtd;
         P.orc += orcIt; G.orc += orcIt;
-        const I = { qtd, base: qtdBase, persSoma, nPers: (it.pers || []).length, vars, orc: orcIt, por: {}, partes, pid: p.id, gid: g.id };
+        const I = { qtd, base: qtdBase, persSoma, nPers: (it.pers || []).length, vars, orc: orcIt, por: {}, partes, pid: p.id, gid: g.id, vinc };
         const ins = insumoDe(q, it.insumoId);
         const k = it.insumoId || "_sem";
         if (!R.insumos.has(k)) R.insumos.set(k, { id: it.insumoId, nome: ins?.nome || "(sem insumo)", un: unidadeInsumo(q, ins), qtd: 0, orc: 0, total: zero(), itens: [], escolhidas: {} });
@@ -1418,6 +1430,10 @@ function selectEscolha(q, it, f, I, dataAttr){
 /* rendimento (ficha técnica): opcional por insumo */
 // tipos: "embalagem" (a ficha diz quanto a embalagem inteira cobre), "rende" (por kg ou L) e "consumo" (kg ou L por unidade do insumo)
 // valor por embalagens inteiras: padrão ligado quando o insumo usa rendimento
+// vínculo entre insumos: a quantidade de um insumo acompanha a de outro no mesmo pavimento (ex.: cola = rodapé × 1)
+function vincDe(q, it){ const ins = insumoDe(q, it.insumoId), v = ins?.vinculo;
+  if (!v?.insumoId || v.insumoId === ins.id) return null; const alvo = insumoDe(q, v.insumoId); return alvo && !alvo.vinculo ? v : null; }
+const textoVinc = (q, v) => v ? `= ${insumoDe(q, v.insumoId)?.nome || "?"} × ${qtdF(num(v.fator ?? 1))}` : "";
 const embInteira = ins => !!ins && (ins.embInteira ?? !!ins.usaRend);
 const tipoRend = o => o.rendTipo || (num(o.conteudo) > 0 ? "rende" : "embalagem");
 const temRend = o => num(o.rend) > 0 && (tipoRend(o) === "embalagem" || num(o.conteudo) > 0);
@@ -1493,7 +1509,7 @@ function corpoComp(q, R, F){
             return `<td class="desc-col" title="${esc(it.desc[d.id])}">${esc(it.desc[d.id])}${ck && ck.ok === false ? `<span class="aviso" title="${esc(textoBatente(ck))}">⚠</span>` : ""}</td>`; }).join("")}
           ${GR ? `<td class="desc-col" title="${esc(I.partes?.tipo || "")}">${I.partes?.semTipo ? `<span style="color:var(--warn)">sem tipo</span>` : esc(I.partes?.tipo || "")}</td>` : ""}
           ${it.global ? `${C.map(() => `<td></td>`).join("")}<td class="vg" colspan="2">valor global</td>`
-            : `${C.map(c => `<td class="n cq">${qtdF(num(I.vars[c.chave]))}</td>`).join("")}<td class="n cq" ${I.nPers ? `title="${esc(it.pers.map(x => `${x.onde || "?"}: ${num(x.qtd) > 0 ? "+" : ""}${qtdF(num(x.qtd))}${x.motivo ? " (" + x.motivo + ")" : ""}`).join("\n"))}"` : ""}><b>${qtdF(I.qtd)}</b>${I.nPers ? `<span class="emb">padrão ${qtdF(I.base)}, pers. ${I.persSoma > 0 ? "+" : I.persSoma < 0 ? "−" : ""}${qtdF(Math.abs(I.persSoma))}</span>` : ""}</td><td class="un">${esc(un)}</td>`}
+            : `${C.map(c => `<td class="n cq">${I.vinc ? "—" : qtdF(num(I.vars[c.chave]))}</td>`).join("")}<td class="n cq" ${I.vinc ? `title="${esc(textoVinc(q, I.vinc))} no pavimento"` : I.nPers ? `title="${esc(it.pers.map(x => `${x.onde || "?"}: ${num(x.qtd) > 0 ? "+" : ""}${qtdF(num(x.qtd))}${x.motivo ? " (" + x.motivo + ")" : ""}`).join("\n"))}"` : ""}><b>${qtdF(I.qtd)}</b>${I.nPers ? `<span class="emb">padrão ${qtdF(I.base)}, pers. ${I.persSoma > 0 ? "+" : I.persSoma < 0 ? "−" : ""}${qtdF(Math.abs(I.persSoma))}</span>` : ""}</td><td class="un">${esc(un)}</td>`}
           ${F.map(f => { const x = I.por[f.id];
             const sel = selectEscolha(q, it, f, I, `data-esc="${it.id}"`);
             if (!x.o) return `<td class="bl">${sel}</td><td class="sem" colspan="2">${x.none ? "não considerado" : x.n === 0 ? "não cotado" : "—"}</td>`;
@@ -1587,13 +1603,13 @@ function abaQuantitativos(){
       p.itens.forEach((it, ii) => {
         const base = `grupos.${gi}.n2.${pi}.itens.${ii}`;
         const ins = insumoDe(q, it.insumoId);
-        h += `<tr class="l3"><td class="c0" ${m.usaNivel2 ? "" : `style="padding-left:22px"`}><input class="in" list="dlInsumos" data-insumo="${gi}.${pi}.${ii}" value="${esc(ins?.nome || "")}" placeholder="Insumo (ex.: BACIA COM CAIXA ACOPLADA)" aria-label="Insumo"></td>
+        h += `<tr class="l3"><td class="c0" ${m.usaNivel2 ? "" : `style="padding-left:22px"`}><div class="grp-flex" style="gap:4px"><input class="in" list="dlInsumos" data-insumo="${gi}.${pi}.${ii}" value="${esc(ins?.nome || "")}" placeholder="Insumo (ex.: BACIA COM CAIXA ACOPLADA)" aria-label="Insumo">${vincDe(q, it) ? `<button class="vinc-tag" data-act="vinculo" data-ins="${it.insumoId}" title="Quantidade vinculada: clique para alterar">🔗 ${esc(textoVinc(q, vincDe(q, it)))}</button>` : ""}</div></td>
           ${D.map(d => d.chave === "batente" && m.especial === "portas"
             ? `<td><div class="grp-flex" style="gap:2px"><input class="in desc" style="min-width:70px" data-bind="${base}.desc.${d.id}" data-batin="${it.id}" value="${esc(it.desc[d.id])}" ${(() => { const c = checarBatente(m, it); return c?.sugestao ? `placeholder="${esc(c.sugestao.txt)}"` : ""; })()} aria-label="${esc(d.nome)}"><span data-batchk="${it.id}">${htmlBatente(checarBatente(m, it), it.id)}</span></div></td>`
             : `<td><input class="in desc" data-bind="${base}.desc.${d.id}" value="${esc(it.desc[d.id])}" aria-label="${esc(d.nome)}"></td>`).join("")}
           ${GR ? `<td><select class="in ${it.tipoBancada ? "" : "vazio-sel"}" data-bind="${base}.tipoBancada" aria-label="Tipo de bancada"><option value="">—</option>${(m.tiposBancada || []).map(t => `<option value="${t.id}" ${t.id === it.tipoBancada ? "selected" : ""}>${esc(t.nome)}</option>`).join("")}</select></td>` : ""}
           ${C.map(c => {
-            if (it.global) return `<td class="herd">—</td>`;
+            if (it.global || vincDe(q, it)) return `<td class="herd">—</td>`;
             if (c.nivel === "n2") return `<td class="herd" data-herd="${p.id}|${c.chave}">${qtdF(num(p.valores[c.chave]))}</td>`;
             const herd = p.valores[c.chave];
             return `<td><input class="in num" data-bind="${base}.valores.${c.chave}" data-herdph="${p.id}|${c.chave}" data-tipo="num" inputmode="decimal" value="${esc(inVal(it.valores[c.chave]))}" ${herd != null && herd !== "" ? `placeholder="${esc(inVal(herd))}"` : ""} aria-label="${esc(c.nome)}"></td>`;
@@ -1604,7 +1620,7 @@ function abaQuantitativos(){
           <td><div class="grp-flex"><select class="in" style="min-width:0;width:auto" data-bind="${base}.orcModo" aria-label="Tipo de orçamento">
               <option value="total" ${it.orcModo !== "unit" ? "selected" : ""}>R$ total</option><option value="unit" ${it.orcModo === "unit" ? "selected" : ""}>R$ / ${esc(unidadeInsumo(q, ins))}</option></select>
             <input class="in din" data-bind="${base}.orcValor" data-tipo="num" inputmode="decimal" value="${esc(inVal(it.orcValor))}" placeholder="orçamento" aria-label="Orçamento do insumo"></div></td>
-          <td class="acoes"><label title="Cotado por valor global (fornecedor informa o total)" style="font-size:12px;color:var(--muted);margin-right:4px;cursor:pointer"><input type="checkbox" data-global="${gi}.${pi}.${ii}" ${it.global ? "checked" : ""}> VG</label><button class="icon" data-act="mov" data-nivel="i" data-g="${gi}" data-p="${pi}" data-i="${ii}" data-d="-1" title="Subir" aria-label="Subir">▲</button><button class="icon" data-act="mov" data-nivel="i" data-g="${gi}" data-p="${pi}" data-i="${ii}" data-d="1" title="Descer" aria-label="Descer">▼</button><button class="icon del" data-act="del" data-nivel="i" data-g="${gi}" data-p="${pi}" data-i="${ii}" title="Excluir insumo" aria-label="Excluir insumo">✕</button></td></tr>`;
+          <td class="acoes"><label title="Cotado por valor global (fornecedor informa o total)" style="font-size:12px;color:var(--muted);margin-right:4px;cursor:pointer"><input type="checkbox" data-global="${gi}.${pi}.${ii}" ${it.global ? "checked" : ""}> VG</label>${it.insumoId ? `<button class="icon" data-act="vinculo" data-ins="${it.insumoId}" title="Vincular a quantidade deste insumo à de outro (ex.: cola acompanha o rodapé)" aria-label="Vincular quantidade">🔗</button>` : ""}<button class="icon" data-act="mov" data-nivel="i" data-g="${gi}" data-p="${pi}" data-i="${ii}" data-d="-1" title="Subir" aria-label="Subir">▲</button><button class="icon" data-act="mov" data-nivel="i" data-g="${gi}" data-p="${pi}" data-i="${ii}" data-d="1" title="Descer" aria-label="Descer">▼</button><button class="icon del" data-act="del" data-nivel="i" data-g="${gi}" data-p="${pi}" data-i="${ii}" title="Excluir insumo" aria-label="Excluir insumo">✕</button></td></tr>`;
       });
       h += `<tr class="addrow"><td class="c0" style="padding-left:${m.usaNivel2 ? 42 : 22}px"><button class="btn sm" data-act="addItem" data-g="${gi}" data-p="${pi}">+ Insumo</button></td><td colspan="${nCols}"></td></tr>`;
     });
@@ -2042,6 +2058,7 @@ async function executar(a, d, e){
       if (!/\barea_unit\b/.test(m.formula)) m.formula = (m.campos.some(c => c.chave === "repeticoes") ? "repeticoes * " : "") + "area_unit";
       S.modeloDirty = true; render(); toast("Colunas do granito restauradas. Confira a fórmula e salve o modelo."); break; }
     case "pers": modalPers(d.id); break;
+    case "vinculo": modalVinculo(d.ins); break;
     case "mLimpar": S.modeloEdit.formula = ""; S.caret = 0; S.modeloDirty = true; render(); break;
     case "salvarModelo": {
       const m = S.modeloEdit;
@@ -2447,7 +2464,7 @@ function montarDetalhado(wb, q, R, F, o){
       if (m.usaNivel2) L.push([2, p.nome, ...pre(D.length + (GR ? 1 : 0)), ...C.map(c => c.nivel === "n2" ? num(p.valores[c.chave]) : ""), P.qtd, "", ...tots(P.total), P.orc || "", P.orc ? P.orc * R.fator : ""]);
       for (const it of p.itens){
         const I = R.itens[it.id], ins = insumoDe(q, it.insumoId), un = unidadeInsumo(q, ins);
-        L.push([3, ins?.nome || "", ...D.map(x => it.desc[x.id] || ""), ...(GR ? [I.partes?.tipo || ""] : []), ...C.map(c => it.global ? "" : num(I.vars[c.chave])), it.global ? "VG" : I.qtd, un,
+        L.push([3, ins?.nome || "", ...D.map(x => it.desc[x.id] || ""), ...(GR ? [I.partes?.tipo || ""] : []), ...C.map(c => it.global || I.vinc ? "" : num(I.vars[c.chave])), it.global ? "VG" : I.qtd, un,
           ...F.flatMap(f => { const x = I.por[f.id]; return x.o ? [x.o.linha, x.o.unidVenda ? `${x.o.unidVenda} (${temRend(x.o) ? rendTxt(x.o, un) : `${qtdF(num(x.o.contem) || 1)} ${un}`})` : "", x.unit, x.total] : ["-", "", "", ""]; }),
           I.orc || "", I.orc ? I.orc * R.fator : ""]);
       }
@@ -2556,6 +2573,38 @@ async function modalImportarPrecos(){
     fechar(); marcarAlterado(); renderAba();
     toast(`Importado: ${nf} fornecedor(es) novo(s)${nfAtual ? `, ${nfAtual} completado(s)` : ""}, ${nl} linha(s) nova(s)${na ? `, ${na} atualizada(s)` : ""}${ni ? `, ${ni} insumo(s) criado(s)` : ""}${nimg ? `, ${nimg} imagem(ns)` : ""}. Salve a QQP para manter.`, 6000);
   };
+}
+
+/* ---------------- vínculo de quantidade entre insumos ---------------- */
+function modalVinculo(insId){
+  const q = S.q, ins = insumoDe(q, insId); if (!ins) return;
+  const usadoPor = q.insumos.filter(i => i.vinculo?.insumoId === ins.id).map(i => i.nome);
+  const opcoes = q.insumos.filter(i => i.id !== ins.id && !i.vinculo && todosItens(q).some(it => it.insumoId === i.id));
+  const atual = ins.vinculo || {};
+  const { bg, fechar } = abrirModal(`<h3>Vincular quantidade: ${esc(ins.nome)}</h3>
+    ${usadoPor.length ? `<p>Este insumo é a base do vínculo de ${esc(usadoPor.join(", "))}, por isso não pode ser vinculado a outro.</p><div class="acts"><button class="btn" data-fechar>Fechar</button></div>` : `
+    <p>Em cada pavimento, a quantidade de <b>${esc(ins.nome)}</b> passa a ser a quantidade do insumo escolhido naquele pavimento (já com as personalizações) multiplicada pelo fator. Ex.: cola = rodapé × 1, em metros; o rendimento da cola em Fornecedores e preços converte os metros em embalagens.</p>
+    <div style="display:grid;grid-template-columns:1fr 120px;gap:12px">
+      <div class="field"><label for="vAlvo">Acompanha a quantidade de</label><select id="vAlvo">${opcoes.map(i => `<option value="${i.id}" ${i.id === atual.insumoId ? "selected" : ""}>${esc(i.nome)} (${esc(unidadeInsumo(q, i))})</option>`).join("") || `<option value="">Nenhum outro insumo lançado</option>`}</select></div>
+      <div class="field"><label for="vFator">Fator</label><input id="vFator" inputmode="decimal" value="${esc(inVal(atual.fator ?? 1))}"></div></div>
+    <label class="checkline"><input type="checkbox" id="vCriar" checked> Criar linhas de ${esc(ins.nome)} nos pavimentos que têm o insumo escolhido e ainda não têm ${esc(ins.nome)}</label>
+    <div class="acts">${ins.vinculo ? `<button class="btn danger" id="vRem" style="margin-right:auto">Remover vínculo</button>` : ""}<button class="btn" data-fechar>Cancelar</button><button class="btn primary" id="vOk" ${opcoes.length ? "" : "disabled"}>Vincular</button></div>`}`);
+  bg.querySelector("#vRem")?.addEventListener("click", () => { delete ins.vinculo; fechar(); marcarAlterado(); renderAba(); toast("Vínculo removido. As quantidades voltam a ser digitadas linha a linha."); });
+  bg.querySelector("#vOk")?.addEventListener("click", () => {
+    const alvo = insumoDe(q, bg.querySelector("#vAlvo").value); if (!alvo) return;
+    const fator = parseIn(bg.querySelector("#vFator").value) ?? 1;
+    ins.vinculo = { insumoId: alvo.id, fator };
+    if (!ins.unidade) ins.unidade = unidadeInsumo(q, alvo);
+    let criadas = 0;
+    if (bg.querySelector("#vCriar").checked) q.grupos.forEach(g => g.n2.forEach(p => {
+      if (p.itens.some(x => x.insumoId === ins.id)) return;
+      const base = p.itens.filter(x => x.insumoId === alvo.id); if (!base.length) return;
+      const pos = p.itens.indexOf(base[base.length - 1]) + 1;
+      p.itens.splice(pos, 0, { id: uid(), insumoId: ins.id, valores: {}, desc: clone(base[0].desc || {}), escolhas: {}, global: false, orcModo: "total", orcValor: null, pers: [] }); criadas++;
+    }));
+    fechar(); marcarAlterado(); renderAba();
+    toast(`${ins.nome} vinculado a ${alvo.nome} × ${qtdF(fator)}${criadas ? `; ${criadas} linha(s) criada(s)` : ""}.`, 4500);
+  });
 }
 
 /* gancho de teste local (sem efeito em produção) */
@@ -2919,7 +2968,7 @@ async function gerarPDF(){
       for (const p of g.n2){
         if (m.usaNivel2){ corpoQ.push([`   ${p.nome || m.nivel2Nome}`, ...Dsc.map(() => ""), ...(GR ? [""] : []), ...Cs.map(c => c.nivel === "n2" ? qtdF(num(p.valores[c.chave])) : ""), qtdF(R.n2[p.id].qtd), "", "", ""]); estilos.push("p"); }
         for (const it of p.itens){ const I = R.itens[it.id], ins = insumoDe(q, it.insumoId);
-          corpoQ.push([`      ${ins?.nome || "-"}`, ...Dsc.map(d => it.desc[d.id] || ""), ...(GR ? [I.partes?.tipo || ""] : []), ...Cs.map(c => it.global ? "" : qtdF(num(I.vars[c.chave]))),
+          corpoQ.push([`      ${ins?.nome || "-"}`, ...Dsc.map(d => it.desc[d.id] || ""), ...(GR ? [I.partes?.tipo || ""] : []), ...Cs.map(c => it.global || I.vinc ? "" : qtdF(num(I.vars[c.chave]))),
             it.global ? "VG" : qtdF(I.qtd), I.nPers ? `${I.persSoma > 0 ? "+" : ""}${qtdF(I.persSoma)}` : "", unidadeInsumo(q, ins), I.orc ? brl(I.orc) : ""]); estilos.push("i"); }
       }
     }
